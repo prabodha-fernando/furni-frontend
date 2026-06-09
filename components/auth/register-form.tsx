@@ -1,0 +1,122 @@
+'use client'
+
+import { useState } from 'react'
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Eye, EyeOff } from 'lucide-react'
+
+export function RegisterForm() {
+  const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Real app ekaka methanin backend ekata data yawala user wa hadanawa
+    // Save current user to localStorage for profile display
+    localStorage.setItem('currentUser', JSON.stringify({ email, name }));
+    // Danata kelinma dashboard ekata yawamu
+    router.push(`/dashboard?role=${selectedRole}`);
+  }
+
+  return (
+    <div className="w-full">
+      <form onSubmit={handleRegister} className="space-y-5">
+        
+        {/* Role Segmented Selector */}
+        <div className="space-y-2">
+          <Label className="text-zinc-900 font-semibold">Register As</Label>
+          <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1 rounded-full border border-zinc-200/50">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('customer')}
+              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
+                selectedRole === 'customer'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+              }`}
+            >
+              🛋️ Customer
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('admin')}
+              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
+                selectedRole === 'admin'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+              }`}
+            >
+              🔑 Admin
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-zinc-900 font-semibold">Full Name*</Label>
+          <Input 
+            id="name" 
+            type="text" 
+            placeholder="John Doe" 
+            required 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-zinc-900 font-semibold">Email Address*</Label>
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="Enter Email Address" 
+            required 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-zinc-900 font-semibold">Create Password*</Label>
+          <div className="relative">
+            <Input 
+              id="password" 
+              type={showPassword ? "text" : "password"} 
+              placeholder="Create a strong password"
+              required 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 pr-12"
+            />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
+        
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-6 transition-all">
+          Create Account
+        </Button>
+      </form>
+
+      <div className="mt-8 text-center text-sm">
+        <span className="text-zinc-900 font-medium">Already have an account? </span>
+        <Link href="/login" className="font-bold text-blue-600 hover:underline">
+          Sign In
+        </Link>
+      </div>
+    </div>
+  )
+}
