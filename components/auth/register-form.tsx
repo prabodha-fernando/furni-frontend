@@ -18,17 +18,14 @@ export function RegisterForm() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    // Real app ekaka methanin backend ekata data yawala user wa hadanawa
-    // Save current user to localStorage for profile display
-    localStorage.setItem('currentUser', JSON.stringify({ email, name }));
-    // Danata kelinma dashboard ekata yawamu
+
     router.push(`/dashboard?role=${selectedRole}`);
   }
 
   return (
     <div className="w-full">
       <form onSubmit={handleRegister} className="space-y-5">
-        
+
         {/* Role Segmented Selector */}
         <div className="space-y-2">
           <Label className="text-zinc-900 font-semibold">Register As</Label>
@@ -36,22 +33,20 @@ export function RegisterForm() {
             <button
               type="button"
               onClick={() => setSelectedRole('customer')}
-              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
-                selectedRole === 'customer'
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
-              }`}
+              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${selectedRole === 'customer'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+                }`}
             >
               🛋️ Customer
             </button>
             <button
               type="button"
               onClick={() => setSelectedRole('admin')}
-              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
-                selectedRole === 'admin'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
-              }`}
+              className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${selectedRole === 'admin'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+                }`}
             >
               🔑 Admin
             </button>
@@ -60,11 +55,11 @@ export function RegisterForm() {
 
         <div className="space-y-2">
           <Label htmlFor="name" className="text-zinc-900 font-semibold">Full Name*</Label>
-          <Input 
-            id="name" 
-            type="text" 
-            placeholder="John Doe" 
-            required 
+          <Input
+            id="name"
+            type="text"
+            placeholder="John Doe"
+            required
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
@@ -73,30 +68,30 @@ export function RegisterForm() {
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-zinc-900 font-semibold">Email Address*</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="Enter Email Address" 
-            required 
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter Email Address"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="password" className="text-zinc-900 font-semibold">Create Password*</Label>
           <div className="relative">
-            <Input 
-              id="password" 
-              type={showPassword ? "text" : "password"} 
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
-              required 
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 pr-12"
             />
-            <button 
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
@@ -105,7 +100,7 @@ export function RegisterForm() {
             </button>
           </div>
         </div>
-        
+
         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-6 transition-all">
           Create Account
         </Button>
