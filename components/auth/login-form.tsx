@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession, signOut } from 'next-auth/react'
+import { useToast } from '@/hooks/use-toast'
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,20 +21,49 @@ export function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Email/Password Login Logic
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsEmailLoading(true);
 
-    setTimeout(() => {
-      // 🌟 ADMIN/CUSTOMER ROLE ROUTING LOGIC
-      const targetRole = (email.trim().toLowerCase() === 'admin@furniture.com' || selectedRole === 'admin') ? 'admin' : 'customer';
+    try {
+      const result = await signIn('credentials', {
+        email: email.trim(),
+        password,
+        role: selectedRole,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        if (result.error.includes('RoleMismatch') || result.error === 'RoleMismatch') {
+          toast.error(`Access denied. You cannot log in as ${selectedRole === 'admin' ? 'an Admin' : 'a User'} with this account.`);
+        } else {
+          toast.error('Invalid email or password');
+        }
+        setIsEmailLoading(false);
+        return;
+      }
+
+      // Double check role matching client-side
+      const session = await getSession();
+      const actualRole = (session?.user as { role?: string })?.role || 'customer';
+
+      if (actualRole !== selectedRole) {
+        await signOut({ redirect: false });
+        toast.error(`Access denied. You cannot log in as ${selectedRole === 'admin' ? 'an Admin' : 'a User'} with this account.`);
+        setIsEmailLoading(false);
+        return;
+      }
 
       // Save current user to localStorage for profile display
       const mockName = email.trim().toLowerCase() === 'admin@furniture.com' ? 'Admin User' : email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
       localStorage.setItem('currentUser', JSON.stringify({ email, name: mockName.charAt(0).toUpperCase() + mockName.slice(1) }));
 
-      router.push(`/dashboard?role=${targetRole}`);
-    }, 1000);
+      router.push(`/dashboard?role=${actualRole}`);
+    } catch (error) {
+      toast.error('An unexpected error occurred during sign in');
+      console.error(error);
+      setIsEmailLoading(false);
+    }
   }
 
   const handleGoogleSignIn = async () => {
@@ -65,7 +96,7 @@ export function LoginForm() {
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
                 }`}
             >
-              🛋️ I am a Customer
+              🛋️ User
             </button>
             <button
               type="button"
@@ -79,7 +110,7 @@ export function LoginForm() {
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
                 }`}
             >
-              🔑 I am an Admin
+              🔑 Admin
             </button>
           </div>
         </div>
@@ -131,7 +162,7 @@ export function LoginForm() {
               className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 accent-blue-600 cursor-pointer disabled:opacity-50"
             />
             <label htmlFor="remember" className="text-sm text-zinc-900 font-medium cursor-pointer">
-              Remember For 30 Days
+              Remember Me
             </label>
           </div>
           <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:underline">
