@@ -28,11 +28,25 @@ export function RegisterForm() {
     e.preventDefault()
     setIsLoading(true)
 
+    // Form validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address.')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long.')
+      setIsLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role: selectedRole }),
+        body: JSON.stringify({ name, email: email.trim(), password, role: selectedRole }),
       })
 
       if (!res.ok) {
