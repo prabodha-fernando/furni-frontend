@@ -9,8 +9,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    }
+
     // Check if user already exists
-    if (USERS.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+    if (USERS.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 })
     }
 

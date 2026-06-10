@@ -2,27 +2,36 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 
-/**
- * In-memory user store.
- * In a production app this would be replaced by a real database lookup.
- * Passwords are stored here server-side only and never sent to the browser.
- */
-export const USERS = [
+export interface UserStoreItem {
+  id: string
+  name: string
+  email: string
+  password: string
+  role: 'admin' | 'customer'
+}
+
+const globalForUsers = globalThis as unknown as { users: UserStoreItem[] }
+
+export const USERS: UserStoreItem[] = globalForUsers.users || [
   {
     id: '1',
     name: 'Admin User',
     email: 'admin@furniture.com',
     password: 'admin123',
-    role: 'admin' as const,
+    role: 'admin',
   },
   {
     id: '2',
     name: 'John Doe',
     email: 'john@example.com',
     password: 'password123',
-    role: 'customer' as const,
+    role: 'customer',
   },
 ]
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForUsers.users = USERS
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -31,6 +40,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        role: { label: 'Role', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
@@ -43,6 +53,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null
 
+        // Check if the selected login role matches the user's role in the DB
+        if (credentials.role && user.role !== credentials.role) {
+          throw new Error('RoleMismatch')
+        }
+
         // Return a clean user object without the password
         return {
           id: user.id,
@@ -52,6 +67,7 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+
 
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
