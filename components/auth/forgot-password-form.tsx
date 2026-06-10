@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { Loader2, CheckCircle } from 'lucide-react'
 
 export function ForgotPasswordForm() {
-  const [email,       setEmail]       = useState('')
-  const [isLoading,   setIsLoading]   = useState(false)
+  const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const [errorMsg,    setErrorMsg]    = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,30 +19,29 @@ export function ForgotPasswordForm() {
     setErrorMsg('')
 
     try {
-      // Call the backend API to send the password reset email
       const response = await fetch('/api/send-reset', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ email }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        // Show the success state only when the email was sent successfully
         setIsSubmitted(true)
       } else {
         setErrorMsg(data.error || 'Failed to send reset link. Please try again.')
       }
     } catch (error) {
-      console.error('Error sending reset email:', error)
+      console.error("Error sending email:", error)
       setErrorMsg('An error occurred. Please try again later.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Success state — shown after the reset link is sent
   if (isSubmitted) {
     return (
       <div className="text-center space-y-6 py-4">
@@ -66,7 +65,7 @@ export function ForgotPasswordForm() {
     )
   }
 
-  // Default email input form
+  // Normal Email input form 
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -84,7 +83,6 @@ export function ForgotPasswordForm() {
           />
         </div>
 
-        {/* Display error feedback when the API call fails */}
         {errorMsg && (
           <div className="p-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg border border-red-200">
             {errorMsg}
@@ -99,7 +97,7 @@ export function ForgotPasswordForm() {
           {isLoading ? (
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending link...</>
           ) : (
-            'Send Reset Link'
+            "Send Reset Link"
           )}
         </Button>
       </form>
