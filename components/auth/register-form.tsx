@@ -24,20 +24,59 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  const [nameError, setNameError] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
+  const validateName = (val: string) => {
+    if (!val.trim()) {
+      setNameError('Full name is required')
+      return false
+    }
+    if (val.trim().length < 2) {
+      setNameError('Name must be at least 2 characters')
+      return false
+    }
+    setNameError('')
+    return true
+  }
+
+  const validateEmail = (val: string) => {
+    if (!val.trim()) {
+      setEmailError('Email address is required')
+      return false
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(val.trim())) {
+      setEmailError('Please enter a valid email address')
+      return false
+    }
+    setEmailError('')
+    return true
+  }
+
+  const validatePassword = (val: string) => {
+    if (!val) {
+      setPasswordError('Password is required')
+      return false
+    }
+    if (val.length < 6) {
+      setPasswordError('Password must be at least 6 characters')
+      return false
+    }
+    setPasswordError('')
+    return true
+  }
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Form validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast.error('Please enter a valid email address.')
-      setIsLoading(false)
-      return
-    }
+    const isNameValid = validateName(name)
+    const isEmailValid = validateEmail(email)
+    const isPasswordValid = validatePassword(password)
 
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long.')
+    if (!isNameValid || !isEmailValid || !isPasswordValid) {
       setIsLoading(false)
       return
     }
@@ -108,9 +147,21 @@ export function RegisterForm() {
             placeholder="John Doe"
             required
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
+            onChange={(e) => {
+              setName(e.target.value)
+              if (nameError) validateName(e.target.value)
+            }}
+            onBlur={() => validateName(name)}
+            className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 transition-all ${nameError
+              ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+              : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+              }`}
           />
+          {nameError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {nameError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -121,9 +172,21 @@ export function RegisterForm() {
             placeholder="Enter Email Address"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200"
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (emailError) validateEmail(e.target.value)
+            }}
+            onBlur={() => validateEmail(email)}
+            className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 transition-all ${emailError
+              ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+              : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+              }`}
           />
+          {emailError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {emailError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -135,8 +198,15 @@ export function RegisterForm() {
               placeholder="Create a strong password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 pr-12"
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (passwordError) validatePassword(e.target.value)
+              }}
+              onBlur={() => validatePassword(password)}
+              className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 pr-12 transition-all ${passwordError
+                ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+                : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+                }`}
             />
             <button
               type="button"
@@ -146,6 +216,11 @@ export function RegisterForm() {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+          {passwordError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {passwordError}
+            </p>
+          )}
         </div>
 
         <Button

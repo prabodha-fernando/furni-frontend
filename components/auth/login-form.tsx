@@ -20,10 +20,48 @@ export function LoginForm() {
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateEmail = (val: string) => {
+    if (!val.trim()) {
+      setEmailError('Email address is required');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(val.trim())) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const validatePassword = (val: string) => {
+    if (!val) {
+      setPasswordError('Password is required');
+      return false;
+    }
+    if (val.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
   // Email/Password Login Logic
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsEmailLoading(true);
+
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      setIsEmailLoading(false);
+      return;
+    }
 
     try {
       const result = await signIn('credentials', {
@@ -123,10 +161,22 @@ export function LoginForm() {
             placeholder="Enter Email Address (Use admin@furniture.com for Admin)"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (emailError) validateEmail(e.target.value);
+            }}
+            onBlur={() => validateEmail(email)}
             disabled={isEmailLoading || isGoogleLoading}
-            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 disabled:opacity-50 text-sm"
+            className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 disabled:opacity-50 text-sm transition-all ${emailError
+              ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+              : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+              }`}
           />
+          {emailError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {emailError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -138,9 +188,16 @@ export function LoginForm() {
               placeholder="Enter Password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) validatePassword(e.target.value);
+              }}
+              onBlur={() => validatePassword(password)}
               disabled={isEmailLoading || isGoogleLoading}
-              className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 pr-12 disabled:opacity-50"
+              className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 pr-12 disabled:opacity-50 transition-all ${passwordError
+                ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+                : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+                }`}
             />
             <button
               type="button"
@@ -151,6 +208,11 @@ export function LoginForm() {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+          {passwordError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {passwordError}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between mt-2">

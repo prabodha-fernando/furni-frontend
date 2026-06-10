@@ -12,11 +12,31 @@ export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [emailError, setEmailError] = useState('')
+
+  const validateEmail = (val: string) => {
+    if (!val.trim()) {
+      setEmailError('Email address is required')
+      return false
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(val.trim())) {
+      setEmailError('Please enter a valid email address')
+      return false
+    }
+    setEmailError('')
+    return true
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setErrorMsg('')
+
+    if (!validateEmail(email)) {
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/send-reset', {
@@ -24,7 +44,7 @@ export function ForgotPasswordForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       const data = await response.json();
@@ -77,10 +97,23 @@ export function ForgotPasswordForm() {
             placeholder="Enter Email Address"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (emailError) validateEmail(e.target.value)
+            }}
+            onBlur={() => validateEmail(email)}
             disabled={isLoading}
-            className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 disabled:opacity-50"
+            className={`focus-visible:ring-blue-600 rounded-full px-4 py-6 disabled:opacity-50 transition-all ${
+              emailError
+                ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500 bg-red-50/20'
+                : 'border-zinc-200 focus-visible:ring-blue-600 focus-visible:border-blue-600'
+            }`}
           />
+          {emailError && (
+            <p className="text-xs font-bold text-red-600 mt-1 pl-3 animate-in fade-in duration-200">
+              ⚠️ {emailError}
+            </p>
+          )}
         </div>
 
         {errorMsg && (

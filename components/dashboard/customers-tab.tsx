@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,29 @@ export function CustomersTab({
   isSubmittingTicket, profileName,
   handleTicketSubmit, handleToggleCustomerStatus, handleSendCoupon,
 }: CustomersTabProps) {
+  const [subjectErr, setSubjectErr] = useState('')
+  const [messageErr, setMessageErr] = useState('')
+
+  const validateSubject = (val: string) => {
+    if (!val.trim()) { setSubjectErr('Subject is required'); return false }
+    if (val.trim().length < 5) { setSubjectErr('Subject must be at least 5 characters'); return false }
+    setSubjectErr(''); return true
+  }
+
+  const validateMessage = (val: string) => {
+    if (!val.trim()) { setMessageErr('Detailed message is required'); return false }
+    if (val.trim().length < 10) { setMessageErr('Detailed message must be at least 10 characters'); return false }
+    setMessageErr(''); return true
+  }
+
+  const onTicketSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const isSubjectValid = validateSubject(newTicketSubject)
+    const isMessageValid = validateMessage(newTicketMessage)
+    if (isSubjectValid && isMessageValid) {
+      handleTicketSubmit(e)
+    }
+  }
   return (
     <div className="animate-in fade-in duration-500">
       {currentRole === 'admin' ? (
@@ -157,7 +181,7 @@ export function CustomersTab({
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Create Support Request</h3>
               <p className="text-xs text-slate-400 font-medium mt-0.5">Describe your issue below. Our staff will reply shortly.</p>
             </div>
-            <form onSubmit={handleTicketSubmit} className="p-6 space-y-5">
+            <form onSubmit={onTicketSubmit} className="p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</Label>
@@ -174,25 +198,39 @@ export function CustomersTab({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject</Label>
+                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject *</Label>
                   <Input
                     required
                     placeholder="e.g., Sofa delivery delayed"
                     value={newTicketSubject}
-                    onChange={(e) => setNewTicketSubject(e.target.value)}
-                    className="rounded-xl h-11 text-xs font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                    onChange={(e) => {
+                      setNewTicketSubject(e.target.value)
+                      if (subjectErr) validateSubject(e.target.value)
+                    }}
+                    onBlur={() => validateSubject(newTicketSubject)}
+                    className={`rounded-xl h-11 text-xs font-bold bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                      subjectErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                    }`}
                   />
+                  {subjectErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {subjectErr}</p>}
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detailed Message</Label>
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Detailed Message *</Label>
                 <textarea
                   required
                   placeholder="Describe your issue in detail..."
                   value={newTicketMessage}
-                  onChange={(e) => setNewTicketMessage(e.target.value)}
-                  className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-xs font-semibold outline-none min-h-[140px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 shadow-inner resize-none transition-all"
+                  onChange={(e) => {
+                    setNewTicketMessage(e.target.value)
+                    if (messageErr) validateMessage(e.target.value)
+                  }}
+                  onBlur={() => validateMessage(newTicketMessage)}
+                  className={`w-full border bg-slate-50 rounded-xl p-4 text-xs font-semibold outline-none min-h-[140px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 shadow-inner resize-none transition-all ${
+                    messageErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                  }`}
                 />
+                {messageErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {messageErr}</p>}
               </div>
               <div className="flex justify-end pt-2">
                 <Button type="submit" disabled={isSubmittingTicket} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs h-11 px-8 gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform">

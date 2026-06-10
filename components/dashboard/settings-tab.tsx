@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -104,6 +105,161 @@ export function SettingsTab({
   emailNotifs, setEmailNotifs, orderUpdates, setOrderUpdates, promoNotifs, setPromoNotifs,
   handleSaveProfile, handleSavePassword,
 }: SettingsTabProps) {
+  // Store Config Errors
+  const [storeNameErr, setStoreNameErr] = useState('')
+  const [storeEmailErr, setStoreEmailErr] = useState('')
+  const [currencyErr, setCurrencyErr] = useState('')
+  const [shippingFeeErr, setShippingFeeErr] = useState('')
+  const [taxRateErr, setTaxRateErr] = useState('')
+
+  // Customer Profile Errors
+  const [profileNameErr, setProfileNameErr] = useState('')
+  const [profileEmailErr, setProfileEmailErr] = useState('')
+  const [profilePhoneErr, setProfilePhoneErr] = useState('')
+  const [profileCityErr, setProfileCityErr] = useState('')
+  const [profileAddressErr, setProfileAddressErr] = useState('')
+
+  // Security Errors
+  const [currPassErr, setCurrPassErr] = useState('')
+  const [newPassErr, setNewPassErr] = useState('')
+  const [confPassErr, setConfPassErr] = useState('')
+
+  // Admin Change Password local states
+  const [adminCurrPass, setAdminCurrPass] = useState('')
+  const [adminNewPass, setAdminNewPass] = useState('')
+  const [adminConfPass, setAdminConfPass] = useState('')
+  const [adminPassSuccess, setAdminPassSuccess] = useState(false)
+  const [adminPassSaving, setAdminPassSaving] = useState(false)
+
+  // Store Config Validators
+  const validateStoreName = (val: string) => {
+    if (!val.trim()) { setStoreNameErr('Store title is required'); return false }
+    if (val.trim().length < 3) { setStoreNameErr('Store title must be at least 3 characters'); return false }
+    setStoreNameErr(''); return true
+  }
+  const validateStoreEmail = (val: string) => {
+    if (!val.trim()) { setStoreEmailErr('Support email is required'); return false }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(val.trim())) { setStoreEmailErr('Please enter a valid email address'); return false }
+    setStoreEmailErr(''); return true
+  }
+  const validateCurrency = (val: string) => {
+    if (!val.trim()) { setCurrencyErr('Currency is required'); return false }
+    if (val.trim().length !== 3) { setCurrencyErr('Must be a 3-letter currency code (e.g. LKR)'); return false }
+    setCurrencyErr(''); return true
+  }
+  const validateShippingFee = (val: string) => {
+    if (val === '') { setShippingFeeErr('Shipping fee is required'); return false }
+    if (Number(val) < 0) { setShippingFeeErr('Shipping fee must be >= 0'); return false }
+    setShippingFeeErr(''); return true
+  }
+  const validateTaxRate = (val: string) => {
+    if (val === '') { setTaxRateErr('Tax rate is required'); return false }
+    const num = Number(val)
+    if (num < 0 || num > 100) { setTaxRateErr('Tax rate must be between 0 and 100%'); return false }
+    setTaxRateErr(''); return true
+  }
+
+  // Profile Validators
+  const validateProfileName = (val: string) => {
+    if (!val.trim()) { setProfileNameErr('Full name is required'); return false }
+    if (val.trim().length < 2) { setProfileNameErr('Name must be at least 2 characters'); return false }
+    setProfileNameErr(''); return true
+  }
+  const validateProfileEmail = (val: string) => {
+    if (!val.trim()) { setProfileEmailErr('Email is required'); return false }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(val.trim())) { setProfileEmailErr('Please enter a valid email'); return false }
+    setProfileEmailErr(''); return true
+  }
+  const validateProfilePhone = (val: string) => {
+    if (!val.trim()) { setProfilePhoneErr('Phone number is required'); return false }
+    const phoneRegex = /^\+?[0-9\s\-]{9,}$/
+    if (!phoneRegex.test(val.trim())) { setProfilePhoneErr('Please enter a valid phone number (min 9 digits)'); return false }
+    setProfilePhoneErr(''); return true
+  }
+  const validateProfileCity = (val: string) => {
+    if (!val.trim()) { setProfileCityErr('City is required'); return false }
+    setProfileCityErr(''); return true
+  }
+  const validateProfileAddress = (val: string) => {
+    if (!val.trim()) { setProfileAddressErr('Delivery address is required'); return false }
+    if (val.trim().length < 5) { setProfileAddressErr('Address must be at least 5 characters'); return false }
+    setProfileAddressErr(''); return true
+  }
+
+  // Submits
+  const onSaveSettingsSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const isNameValid = validateStoreName(storeName)
+    const isEmailValid = validateStoreEmail(storeEmail)
+    const isCurrencyValid = validateCurrency(currency)
+    const isShippingValid = validateShippingFee(shippingFee)
+    const isTaxValid = validateTaxRate(taxRate)
+
+    if (isNameValid && isEmailValid && isCurrencyValid && isShippingValid && isTaxValid) {
+      handleSaveSettings(e)
+    } else {
+      toast.error('Please fix validation errors in Store Configuration.')
+    }
+  }
+
+  const onSaveProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const isNameValid = validateProfileName(profileName)
+    const isEmailValid = validateProfileEmail(profileEmail)
+    const isPhoneValid = validateProfilePhone(profilePhone)
+    const isCityValid = validateProfileCity(profileCity)
+    const isAddressValid = validateProfileAddress(profileAddress)
+
+    if (isNameValid && isEmailValid && isPhoneValid && isCityValid && isAddressValid) {
+      handleSaveProfile(e)
+    } else {
+      toast.error('Please fix validation errors in your Profile.')
+    }
+  }
+
+  const validateAdminPassword = () => {
+    let valid = true
+    if (!adminCurrPass) { setCurrPassErr('Current password is required'); valid = false } else { setCurrPassErr('') }
+    if (!adminNewPass) { setNewPassErr('New password is required'); valid = false }
+    else if (adminNewPass.length < 6) { setNewPassErr('Password must be at least 6 characters'); valid = false }
+    else { setNewPassErr('') }
+    if (adminNewPass !== adminConfPass) { setConfPassErr('Passwords do not match'); valid = false } else { setConfPassErr('') }
+    return valid
+  }
+
+  const handleAdminPasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validateAdminPassword()) return
+    setAdminPassSaving(true)
+    setTimeout(() => {
+      setAdminPassSaving(false)
+      setAdminPassSuccess(true)
+      setAdminCurrPass('')
+      setAdminNewPass('')
+      setAdminConfPass('')
+      toast.success('Admin password updated successfully.')
+      addLog('Admin password updated successfully', 'admin')
+      setTimeout(() => setAdminPassSuccess(false), 2500)
+    }, 1200)
+  }
+
+  const onSavePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    let valid = true
+    if (!currentPassword) { setCurrPassErr('Current password is required'); valid = false } else { setCurrPassErr('') }
+    if (!newPassword) { setNewPassErr('New password is required'); valid = false }
+    else if (newPassword.length < 6) { setNewPassErr('Password must be at least 6 characters'); valid = false }
+    else { setNewPassErr('') }
+    if (newPassword !== confirmPassword) { setConfPassErr('Passwords do not match'); valid = false } else { setConfPassErr('') }
+
+    if (valid) {
+      handleSavePassword(e)
+    } else {
+      toast.error('Please fix validation errors in Security.')
+    }
+  }
   return (
     <div className="w-full flex flex-col md:flex-row gap-8 animate-in fade-in duration-500">
       {currentRole === 'admin' ? (
@@ -144,29 +300,87 @@ export function SettingsTab({
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Store Configuration</h3>
                   <p className="text-sm text-slate-500 font-medium mt-1">Configure global store identity, operational settings, and regional preferences.</p>
                 </div>
-                <form onSubmit={handleSaveSettings} className="p-8 space-y-8 bg-white">
+                <form onSubmit={onSaveSettingsSubmit} className="p-8 space-y-8 bg-white">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Title</Label>
-                      <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} className="rounded-xl border-slate-200 bg-slate-50 text-sm font-bold h-12 shadow-inner focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all px-4" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Title *</Label>
+                      <Input
+                        value={storeName}
+                        onChange={(e) => {
+                          setStoreName(e.target.value)
+                          if (storeNameErr) validateStoreName(e.target.value)
+                        }}
+                        onBlur={() => validateStoreName(storeName)}
+                        className={`rounded-xl bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          storeNameErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {storeNameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {storeNameErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Support Email</Label>
-                      <Input type="email" value={storeEmail} onChange={(e) => setStoreEmail(e.target.value)} className="rounded-xl border-slate-200 bg-slate-50 text-sm font-bold h-12 shadow-inner focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all px-4" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Support Email *</Label>
+                      <Input
+                        type="email"
+                        value={storeEmail}
+                        onChange={(e) => {
+                          setStoreEmail(e.target.value)
+                          if (storeEmailErr) validateStoreEmail(e.target.value)
+                        }}
+                        onBlur={() => validateStoreEmail(storeEmail)}
+                        className={`rounded-xl bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          storeEmailErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {storeEmailErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {storeEmailErr}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Default Currency</Label>
-                      <Input value={currency} onChange={(e) => setCurrency(e.target.value)} className="rounded-xl border-slate-200 bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Default Currency *</Label>
+                      <Input
+                        value={currency}
+                        onChange={(e) => {
+                          setCurrency(e.target.value)
+                          if (currencyErr) validateCurrency(e.target.value)
+                        }}
+                        onBlur={() => validateCurrency(currency)}
+                        className={`rounded-xl bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          currencyErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {currencyErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {currencyErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Shipping (LKR)</Label>
-                      <Input type="number" value={shippingFee} onChange={(e) => setShippingFee(e.target.value)} className="rounded-xl border-slate-200 bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Shipping (LKR) *</Label>
+                      <Input
+                        type="number"
+                        value={shippingFee}
+                        onChange={(e) => {
+                          setShippingFee(e.target.value)
+                          if (shippingFeeErr) validateShippingFee(e.target.value)
+                        }}
+                        onBlur={() => validateShippingFee(shippingFee)}
+                        className={`rounded-xl bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          shippingFeeErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {shippingFeeErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {shippingFeeErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Tax Rate (%)</Label>
-                      <Input type="number" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="rounded-xl border-slate-200 bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Tax Rate (%) *</Label>
+                      <Input
+                        type="number"
+                        value={taxRate}
+                        onChange={(e) => {
+                          setTaxRate(e.target.value)
+                          if (taxRateErr) validateTaxRate(e.target.value)
+                        }}
+                        onBlur={() => validateTaxRate(taxRate)}
+                        className={`rounded-xl bg-slate-50 text-sm font-bold h-12 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          taxRateErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {taxRateErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {taxRateErr}</p>}
                     </div>
                   </div>
                   <div className="pt-4">
@@ -246,7 +460,7 @@ export function SettingsTab({
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Security Center</h3>
                   <p className="text-sm text-slate-500 font-medium mt-1">Admin account security and global access control settings.</p>
                 </div>
-                <div className="p-8 space-y-8 bg-white">
+                <form onSubmit={handleAdminPasswordSubmit} className="p-8 space-y-8 bg-white">
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-center gap-4 shadow-sm">
                     <div className="p-3 bg-emerald-100 rounded-xl">
                       <ShieldCheck className="text-emerald-600 shrink-0" size={24} />
@@ -258,26 +472,68 @@ export function SettingsTab({
                   </div>
                   <div className="space-y-5">
                     <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-2">Change Admin Password</h4>
-                    {[
-                      { label: 'Current Password', ph: 'Enter current password' },
-                      { label: 'New Password',      ph: 'At least 8 characters' },
-                      { label: 'Confirm Password',  ph: 'Repeat new password' },
-                    ].map(({ label, ph }) => (
-                      <div key={label} className="space-y-1.5">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</Label>
-                        <Input type="password" placeholder={ph} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all px-4" />
-                      </div>
-                    ))}
+                    
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
+                      <Input
+                        type="password"
+                        placeholder="Enter current password"
+                        value={adminCurrPass}
+                        onChange={(e) => {
+                          setAdminCurrPass(e.target.value)
+                          if (currPassErr) setCurrPassErr('')
+                        }}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          currPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {currPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {currPassErr}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
+                      <Input
+                        type="password"
+                        placeholder="At least 6 characters"
+                        value={adminNewPass}
+                        onChange={(e) => {
+                          setAdminNewPass(e.target.value)
+                          if (newPassErr) setNewPassErr('')
+                        }}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          newPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {newPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {newPassErr}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
+                      <Input
+                        type="password"
+                        placeholder="Repeat new password"
+                        value={adminConfPass}
+                        onChange={(e) => {
+                          setAdminConfPass(e.target.value)
+                          if (confPassErr) setConfPassErr('')
+                        }}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          confPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {confPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {confPassErr}</p>}
+                    </div>
                   </div>
                   <div className="flex justify-end pt-4 border-t border-slate-100">
                     <Button
+                      type="submit"
+                      disabled={adminPassSaving}
                       className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs h-11 px-8 gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform"
-                      onClick={() => toast.success('Admin password updated successfully.')}
                     >
-                      <Lock size={14} /> Update Password
+                      {adminPassSaving ? <><Loader2 className="animate-spin h-4 w-4" />Updating...</> : adminPassSuccess ? <><Check className="h-4 w-4" />Updated</> : <><Lock size={14} /> Update Password</>}
                     </Button>
                   </div>
-                </div>
+                </form>
               </Card>
             )}
 
@@ -354,7 +610,7 @@ export function SettingsTab({
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Personal Information</h3>
                   <p className="text-sm text-slate-500 font-medium mt-1">Update your name, contact, delivery address and bio.</p>
                 </div>
-                <form onSubmit={handleSaveProfile} className="p-8 space-y-8 bg-white">
+                <form onSubmit={onSaveProfileSubmit} className="p-8 space-y-8 bg-white">
                   {/* Avatar */}
                   <div className="flex items-center gap-6 pb-6 border-b border-slate-100">
                     <div className="w-20 h-20 rounded-[1.25rem] bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-xl overflow-hidden relative group border-2 border-white">
@@ -393,33 +649,89 @@ export function SettingsTab({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</Label>
-                      <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name *</Label>
+                      <Input
+                        value={profileName}
+                        onChange={(e) => {
+                          setProfileName(e.target.value)
+                          if (profileNameErr) validateProfileName(e.target.value)
+                        }}
+                        onBlur={() => validateProfileName(profileName)}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          profileNameErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {profileNameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileNameErr}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</Label>
-                      <Input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address *</Label>
+                      <Input
+                        type="email"
+                        value={profileEmail}
+                        onChange={(e) => {
+                          setProfileEmail(e.target.value)
+                          if (profileEmailErr) validateProfileEmail(e.target.value)
+                        }}
+                        onBlur={() => validateProfileEmail(profileEmail)}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          profileEmailErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {profileEmailErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileEmailErr}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number</Label>
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number *</Label>
                       <div className="relative">
-                        <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <Input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                        <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold" />
+                        <Input
+                          value={profilePhone}
+                          onChange={(e) => {
+                            setProfilePhone(e.target.value)
+                            if (profilePhoneErr) validateProfilePhone(e.target.value)
+                          }}
+                          onBlur={() => validateProfilePhone(profilePhone)}
+                          className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                            profilePhoneErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                          }`}
+                        />
                       </div>
+                      {profilePhoneErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profilePhoneErr}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">City</Label>
-                      <Input value={profileCity} onChange={(e) => setProfileCity(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">City *</Label>
+                      <Input
+                        value={profileCity}
+                        onChange={(e) => {
+                          setProfileCity(e.target.value)
+                          if (profileCityErr) validateProfileCity(e.target.value)
+                        }}
+                        onBlur={() => validateProfileCity(profileCity)}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          profileCityErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {profileCityErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileCityErr}</p>}
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address</Label>
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address *</Label>
                     <div className="relative">
                       <MapPin size={14} className="absolute left-4 top-3.5 text-slate-400" />
-                      <Input value={profileAddress} onChange={(e) => setProfileAddress(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Input
+                        value={profileAddress}
+                        onChange={(e) => {
+                          setProfileAddress(e.target.value)
+                          if (profileAddressErr) validateProfileAddress(e.target.value)
+                        }}
+                        onBlur={() => validateProfileAddress(profileAddress)}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner pl-10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          profileAddressErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
                     </div>
+                    {profileAddressErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileAddressErr}</p>}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Short Bio</Label>
@@ -452,19 +764,55 @@ export function SettingsTab({
                       <p className="text-xs text-emerald-600 font-semibold mt-0.5">SSL encrypted · Last login: Today</p>
                     </div>
                   </div>
-                  <form onSubmit={handleSavePassword} className="space-y-6">
+                  <form onSubmit={onSavePasswordSubmit} className="space-y-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password</Label>
-                      <Input type="password" placeholder="Enter current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
+                      <Input
+                        type="password"
+                        placeholder="Enter current password"
+                        value={currentPassword}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value)
+                          if (currPassErr) setCurrPassErr('')
+                        }}
+                        className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                          currPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                        }`}
+                      />
+                      {currPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {currPassErr}</p>}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password</Label>
-                        <Input type="password" placeholder="Min 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
+                        <Input
+                          type="password"
+                          placeholder="Min 6 characters"
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value)
+                            if (newPassErr) setNewPassErr('')
+                          }}
+                          className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                            newPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                          }`}
+                        />
+                        {newPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {newPassErr}</p>}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password</Label>
-                        <Input type="password" placeholder="Repeat new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="rounded-xl text-xs font-bold h-11 bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
+                        <Input
+                          type="password"
+                          placeholder="Repeat new password"
+                          value={confirmPassword}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value)
+                            if (confPassErr) setConfPassErr('')
+                          }}
+                          className={`rounded-xl text-xs font-bold h-11 bg-slate-50 border shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                            confPassErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                          }`}
+                        />
+                        {confPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {confPassErr}</p>}
                       </div>
                     </div>
                     {passwordError && <p className="text-xs text-rose-600 font-black flex items-center gap-1.5 bg-rose-50 p-3 rounded-lg"><AlertTriangle size={14} />{passwordError}</p>}
