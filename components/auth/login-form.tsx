@@ -1,66 +1,78 @@
 'use client'
 
 import { useState } from 'react'
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 
 export function LoginForm() {
-  const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isEmailLoading, setIsEmailLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter()
 
-  // Email/Password Login Logic
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsEmailLoading(true);
-    
-    setTimeout(() => {
-      // 🌟 ADMIN/CUSTOMER ROLE ROUTING LOGIC
-      const targetRole = (email.trim().toLowerCase() === 'admin@furniture.com' || selectedRole === 'admin') ? 'admin' : 'customer';
-      
-      // Save current user to localStorage for profile display
-      const mockName = email.trim().toLowerCase() === 'admin@furniture.com' ? 'Admin User' : email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
-      localStorage.setItem('currentUser', JSON.stringify({ email, name: mockName.charAt(0).toUpperCase() + mockName.slice(1) }));
-      
-      router.push(`/dashboard?role=${targetRole}`);
-    }, 1000);
+  // Role selector is purely cosmetic — the server resolves the real role from
+  // the credential store in lib/auth.ts (never from a URL param).
+  const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer')
+  const [email,         setEmail]        = useState('')
+  const [password,      setPassword]     = useState('')
+  const [showPassword,  setShowPassword] = useState(false)
+  const [isEmailLoading,  setIsEmailLoading]  = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  // Email / password sign-in via NextAuth CredentialsProvider
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsEmailLoading(true)
+    setErrorMsg('')
+
+    const result = await signIn('credentials', {
+      redirect: false,
+      email: email.trim(),
+      password,
+    })
+
+    if (result?.error) {
+      setErrorMsg('Invalid email or password. Please try again.')
+      setIsEmailLoading(false)
+      return
+    }
+
+    // Persist a display-name override so the layout can show it before the
+    // session propagates. This only stores non-sensitive presentation data.
+    const displayName = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ')
+    localStorage.setItem('currentUser', JSON.stringify({
+      email: email.trim(),
+      name: displayName.charAt(0).toUpperCase() + displayName.slice(1),
+    }))
+
+    router.push('/dashboard')
   }
 
+  // Google sign-in — role defaults to 'customer' on the server (see lib/auth.ts)
   const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+    setIsGoogleLoading(true)
     try {
-      // Google වලින් ලොග් වෙන අය default customer විදිහට යනවා
-      await signIn('google', { callbackUrl: `/dashboard?role=${selectedRole}` });
+      await signIn('google', { callbackUrl: '/dashboard' })
     } catch (error) {
-      console.error("Google sign in failed:", error);
-      setIsGoogleLoading(false);
+      console.error('Google sign-in failed:', error)
+      setIsGoogleLoading(false)
     }
   }
 
   return (
     <div className="w-full">
       <form onSubmit={handleLogin} className="space-y-5">
-        {/* Role Segmented Selector */}
+
+        {/* Role selector — visual intent only, does not grant access */}
         <div className="space-y-2">
           <Label className="text-zinc-900 font-semibold">Select Log In Role</Label>
           <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1 rounded-full border border-zinc-200/50">
             <button
               type="button"
-              onClick={() => {
-                setSelectedRole('customer');
-                if (email === 'admin@furniture.com') {
-                  setEmail('');
-                }
-              }}
+              onClick={() => setSelectedRole('customer')}
               className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
                 selectedRole === 'customer'
                   ? 'bg-amber-600 text-white shadow-md'
@@ -71,11 +83,7 @@ export function LoginForm() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setSelectedRole('admin');
-                setEmail('admin@furniture.com');
-                setPassword('admin123'); // auto prefill a sample password for convenience
-              }}
+              onClick={() => setSelectedRole('admin')}
               className={`rounded-full py-2.5 text-xs font-bold transition-all duration-200 ${
                 selectedRole === 'admin'
                   ? 'bg-blue-600 text-white shadow-md'
@@ -89,32 +97,32 @@ export function LoginForm() {
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-zinc-900 font-semibold">Email Address*</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="Enter Email Address (Use admin@furniture.com for Admin)" 
-            required 
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter Email Address"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isEmailLoading || isGoogleLoading}
             className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 disabled:opacity-50 text-sm"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="password" className="text-zinc-900 font-semibold">Password*</Label>
           <div className="relative">
-            <Input 
-              id="password" 
-              type={showPassword ? "text" : "password"} 
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder="Enter Password"
-              required 
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isEmailLoading || isGoogleLoading}
               className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 pr-12 disabled:opacity-50"
             />
-            <button 
+            <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               disabled={isEmailLoading || isGoogleLoading}
@@ -125,13 +133,20 @@ export function LoginForm() {
           </div>
         </div>
 
+        {/* Show server-side auth error message */}
+        {errorMsg && (
+          <div className="p-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg border border-red-200">
+            {errorMsg}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
-            <input 
-              type="checkbox" 
-              id="remember" 
+            <input
+              type="checkbox"
+              id="remember"
               disabled={isEmailLoading || isGoogleLoading}
-              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 accent-blue-600 cursor-pointer disabled:opacity-50" 
+              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 accent-blue-600 cursor-pointer disabled:opacity-50"
             />
             <label htmlFor="remember" className="text-sm text-zinc-900 font-medium cursor-pointer">
               Remember For 30 Days
@@ -141,22 +156,22 @@ export function LoginForm() {
             Forgot Password
           </Link>
         </div>
-        
-        <Button 
-          type="submit" 
-          disabled={isEmailLoading || isGoogleLoading} 
+
+        <Button
+          type="submit"
+          disabled={isEmailLoading || isGoogleLoading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-4 transition-all flex items-center justify-center"
         >
           {isEmailLoading ? (
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Signing in...</>
           ) : (
-            "Sign In"
+            'Sign In'
           )}
         </Button>
 
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={handleGoogleSignIn}
           disabled={isEmailLoading || isGoogleLoading}
           className="w-full rounded-full py-6 text-md font-medium mt-4 flex items-center justify-center gap-3 border-zinc-200 hover:bg-zinc-50 text-zinc-700"
@@ -176,7 +191,7 @@ export function LoginForm() {
       </form>
 
       <div className="mt-8 text-center text-sm">
-        <span className="text-zinc-900 font-medium">Don't have an account? </span>
+        <span className="text-zinc-900 font-medium">Don&apos;t have an account? </span>
         <Link href="/signup" className="font-bold text-blue-600 hover:underline">
           Sign Up
         </Link>
