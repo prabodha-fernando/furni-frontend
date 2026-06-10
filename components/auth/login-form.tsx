@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
+import { useToast } from '@/hooks/use-toast'
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,11 +21,23 @@ export function LoginForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Email/Password Login Logic
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsEmailLoading(true);
 
-    setTimeout(() => {
+    try {
+      const result = await signIn('credentials', {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error('Invalid email or password');
+        setIsEmailLoading(false);
+        return;
+      }
+
       // 🌟 ADMIN/CUSTOMER ROLE ROUTING LOGIC
       const targetRole = (email.trim().toLowerCase() === 'admin@furniture.com' || selectedRole === 'admin') ? 'admin' : 'customer';
 
@@ -32,7 +46,11 @@ export function LoginForm() {
       localStorage.setItem('currentUser', JSON.stringify({ email, name: mockName.charAt(0).toUpperCase() + mockName.slice(1) }));
 
       router.push(`/dashboard?role=${targetRole}`);
-    }, 1000);
+    } catch (error) {
+      toast.error('An unexpected error occurred during sign in');
+      console.error(error);
+      setIsEmailLoading(false);
+    }
   }
 
   const handleGoogleSignIn = async () => {
