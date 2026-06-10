@@ -1,32 +1,65 @@
 'use client'
 
 import { useState } from 'react'
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 
+import { signIn } from 'next-auth/react'
+import { useToast } from '@/hooks/use-toast'
+
 export function RegisterForm() {
-  const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter()
+  const { toast } = useToast()
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Role selector is stored for future use when registration is connected to a real DB.
+  // It does not grant access — the server resolves the role from the credential store.
+  const [selectedRole, setSelectedRole] = useState<'customer' | 'admin'>('customer')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
-    router.push(`/dashboard?role=${selectedRole}`);
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: selectedRole }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || 'Something went wrong')
+        setIsLoading(false)
+        return
+      }
+
+      // Persist display data so the layout header shows it before the session propagates.
+      // Only non-sensitive presentation data (name, email) is stored.
+      localStorage.setItem('currentUser', JSON.stringify({ name, email }))
+
+      toast.success('Account created successfully! Please sign in.')
+      router.push('/login')
+    } catch (err) {
+      toast.error('An unexpected error occurred.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="w-full">
       <form onSubmit={handleRegister} className="space-y-5">
 
-        {/* Role Segmented Selector */}
+        {/* Role selector — visual intent only, does not grant access */}
         <div className="space-y-2">
           <Label className="text-zinc-900 font-semibold">Register As</Label>
           <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1 rounded-full border border-zinc-200/50">
@@ -84,7 +117,7 @@ export function RegisterForm() {
           <div className="relative">
             <Input
               id="password"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Create a strong password"
               required
               value={password}
@@ -101,8 +134,12 @@ export function RegisterForm() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-6 transition-all">
-          Create Account
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-6 transition-all"
+        >
+          {isLoading ? 'Creating Account...' : 'Create Account'}
         </Button>
       </form>
 
