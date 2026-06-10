@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,6 +57,65 @@ export function DashboardModals({
   const fileInputRef     = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
 
+  const [nameErr, setNameErr] = useState('')
+  const [priceErr, setPriceErr] = useState('')
+  const [stockErr, setStockErr] = useState('')
+
+  const validateName = (val: string) => {
+    if (!val.trim()) { setNameErr('Product title is required'); return false }
+    if (val.trim().length < 3) { setNameErr('Product title must be at least 3 characters'); return false }
+    setNameErr(''); return true
+  }
+
+  const validatePrice = (val: string) => {
+    if (val === '') { setPriceErr('Price is required'); return false }
+    const num = Number(val)
+    if (isNaN(num) || num <= 0) { setPriceErr('Price must be greater than 0'); return false }
+    setPriceErr(''); return true
+  }
+
+  const validateStock = (val: string) => {
+    if (val === '') { setStockErr('Stock is required'); return false }
+    const num = Number(val)
+    if (isNaN(num) || num < 0 || !Number.isInteger(num)) { setStockErr('Stock must be a non-negative integer'); return false }
+    setStockErr(''); return true
+  }
+
+  const onAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const isNameValid = validateName(prodName)
+    const isPriceValid = validatePrice(prodPrice)
+    const isStockValid = validateStock(prodStock)
+    if (isNameValid && isPriceValid && isStockValid) {
+      handleAddProductSubmit(e)
+      setNameErr(''); setPriceErr(''); setStockErr('')
+    }
+  }
+
+  const onEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const isNameValid = validateName(prodName)
+    const isPriceValid = validatePrice(prodPrice)
+    const isStockValid = validateStock(prodStock)
+    if (isNameValid && isPriceValid && isStockValid) {
+      handleEditProductSubmit(e)
+      setNameErr(''); setPriceErr(''); setStockErr('')
+    }
+  }
+
+  const handleCancelAdd = () => {
+    setIsAddProductOpen(false)
+    resetFormFields()
+    setNameErr(''); setPriceErr(''); setStockErr('')
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditProductOpen(false)
+    setSelectedProductToEdit(null)
+    resetFormFields()
+    setNameErr(''); setPriceErr(''); setStockErr('')
+  }
+
   return (
     <>
       {/* ── Add Product Modal ── */}
@@ -68,23 +127,67 @@ export function DashboardModals({
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Add New Product</h2>
                 <p className="text-xs text-slate-500 font-medium mt-1">Publish a new furniture listing to the catalog.</p>
               </div>
-              <button onClick={() => { setIsAddProductOpen(false); resetFormFields() }} className="p-2 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors bg-white border border-slate-100 shadow-sm"><X size={16} /></button>
+              <button onClick={handleCancelAdd} className="p-2 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors bg-white border border-slate-100 shadow-sm"><X size={16} /></button>
             </div>
             
             <div className="p-8 overflow-y-auto flex-1">
-              <form id="add-product-form" onSubmit={handleAddProductSubmit} className="space-y-6">
+              <form id="add-product-form" onSubmit={onAddSubmit} className="space-y-6">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Title *</Label>
-                  <Input id="add-product-name" placeholder="e.g., Luxury Velvet Armchair" required value={prodName} onChange={(e) => setProdName(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                  <Input
+                    id="add-product-name"
+                    placeholder="e.g., Luxury Velvet Armchair"
+                    required
+                    value={prodName}
+                    onChange={(e) => {
+                      setProdName(e.target.value)
+                      if (nameErr) validateName(e.target.value)
+                    }}
+                    onBlur={() => validateName(prodName)}
+                    className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                      nameErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                    }`}
+                  />
+                  {nameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {nameErr}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Price (LKR) *</Label>
-                    <Input id="add-product-price" type="number" placeholder="85000" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                    <Input
+                      id="add-product-price"
+                      type="number"
+                      placeholder="85000"
+                      required
+                      value={prodPrice}
+                      onChange={(e) => {
+                        setProdPrice(e.target.value)
+                        if (priceErr) validatePrice(e.target.value)
+                      }}
+                      onBlur={() => validatePrice(prodPrice)}
+                      className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                        priceErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                      }`}
+                    />
+                    {priceErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {priceErr}</p>}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Quantity *</Label>
-                    <Input id="add-product-stock" type="number" placeholder="12" required value={prodStock} onChange={(e) => setProdStock(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                    <Input
+                      id="add-product-stock"
+                      type="number"
+                      placeholder="12"
+                      required
+                      value={prodStock}
+                      onChange={(e) => {
+                        setProdStock(e.target.value)
+                        if (stockErr) validateStock(e.target.value)
+                      }}
+                      onBlur={() => validateStock(prodStock)}
+                      className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                        stockErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                      }`}
+                    />
+                    {stockErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {stockErr}</p>}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -120,7 +223,7 @@ export function DashboardModals({
             </div>
             
             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-              <Button type="button" variant="outline" onClick={() => { setIsAddProductOpen(false); resetFormFields() }} className="rounded-xl px-6 font-bold text-xs h-11 bg-white hover:bg-slate-100">Cancel</Button>
+              <Button type="button" variant="outline" onClick={handleCancelAdd} className="rounded-xl px-6 font-bold text-xs h-11 bg-white hover:bg-slate-100">Cancel</Button>
               <Button form="add-product-form" type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 font-bold text-xs h-11 gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform">
                 <Plus size={14} /> Publish Product
               </Button>
@@ -138,23 +241,61 @@ export function DashboardModals({
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Product</h2>
                 <p className="text-xs text-slate-500 font-medium mt-1">Update catalog details for this product listing.</p>
               </div>
-              <button onClick={() => { setIsEditProductOpen(false); setSelectedProductToEdit(null); resetFormFields() }} className="p-2 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors bg-white border border-slate-100 shadow-sm"><X size={16} /></button>
+              <button onClick={handleCancelEdit} className="p-2 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors bg-white border border-slate-100 shadow-sm"><X size={16} /></button>
             </div>
             
             <div className="p-8 overflow-y-auto flex-1">
-              <form id="edit-product-form" onSubmit={handleEditProductSubmit} className="space-y-6">
+              <form id="edit-product-form" onSubmit={onEditSubmit} className="space-y-6">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Title</Label>
-                  <Input required value={prodName} onChange={(e) => setProdName(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Product Title *</Label>
+                  <Input
+                    required
+                    value={prodName}
+                    onChange={(e) => {
+                      setProdName(e.target.value)
+                      if (nameErr) validateName(e.target.value)
+                    }}
+                    onBlur={() => validateName(prodName)}
+                    className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                      nameErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                    }`}
+                  />
+                  {nameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {nameErr}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Price (LKR)</Label>
-                    <Input type="number" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Price (LKR) *</Label>
+                    <Input
+                      type="number"
+                      required
+                      value={prodPrice}
+                      onChange={(e) => {
+                        setProdPrice(e.target.value)
+                        if (priceErr) validatePrice(e.target.value)
+                      }}
+                      onBlur={() => validatePrice(prodPrice)}
+                      className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                        priceErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                      }`}
+                    />
+                    {priceErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {priceErr}</p>}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Remaining</Label>
-                    <Input type="number" required value={prodStock} onChange={(e) => setProdStock(e.target.value)} className="rounded-xl h-11 text-sm font-bold bg-slate-50 border-slate-200 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Remaining *</Label>
+                    <Input
+                      type="number"
+                      required
+                      value={prodStock}
+                      onChange={(e) => {
+                        setProdStock(e.target.value)
+                        if (stockErr) validateStock(e.target.value)
+                      }}
+                      onBlur={() => validateStock(prodStock)}
+                      className={`rounded-xl h-11 text-sm font-bold bg-slate-50 shadow-inner px-4 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all ${
+                        stockErr ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 bg-red-50/20' : 'border-slate-200'
+                      }`}
+                    />
+                    {stockErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {stockErr}</p>}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -191,7 +332,7 @@ export function DashboardModals({
             </div>
             
             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-              <Button type="button" variant="outline" onClick={() => { setIsEditProductOpen(false); setSelectedProductToEdit(null); resetFormFields() }} className="rounded-xl px-6 font-bold text-xs h-11 bg-white hover:bg-slate-100">Cancel</Button>
+              <Button type="button" variant="outline" onClick={handleCancelEdit} className="rounded-xl px-6 font-bold text-xs h-11 bg-white hover:bg-slate-100">Cancel</Button>
               <Button form="edit-product-form" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-bold text-xs h-11 gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition-transform">
                 <Check size={14} /> Save Changes
               </Button>
