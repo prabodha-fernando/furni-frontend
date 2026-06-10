@@ -10,16 +10,15 @@ import { Loader2, CheckCircle } from 'lucide-react'
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false) 
-  const [errorMsg, setErrorMsg] = useState('') // Error awoth pennanna
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setErrorMsg('') // Kalin errors thiyenawa nam clear karanawa
+    setErrorMsg('')
 
     try {
-      // 🌟 Methanai hariyatama backend ekata call wenne
       const response = await fetch('/api/send-reset', {
         method: 'POST',
         headers: {
@@ -31,7 +30,7 @@ export function ForgotPasswordForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setIsSubmitted(true) // Email eka success nam vitharak success UI eka pennanawa
+        setIsSubmitted(true)
       } else {
         setErrorMsg(data.error || 'Failed to send reset link. Please try again.')
       }
@@ -43,7 +42,6 @@ export function ForgotPasswordForm() {
     }
   }
 
-  // Link eka successfully send unama pennana lassan UI eka
   if (isSubmitted) {
     return (
       <div className="text-center space-y-6 py-4">
@@ -67,34 +65,33 @@ export function ForgotPasswordForm() {
     )
   }
 
-  // Normal Email input form eka
+  // Normal Email input form 
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-zinc-900 font-semibold">Email Address*</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            placeholder="Enter Email Address" 
-            required 
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter Email Address"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             className="focus-visible:ring-blue-600 rounded-full px-4 py-6 border-zinc-200 disabled:opacity-50"
           />
         </div>
-        
-        {/* Error message ekak awoth pennana thana */}
+
         {errorMsg && (
           <div className="p-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg border border-red-200">
             {errorMsg}
           </div>
         )}
-        
-        <Button 
-          type="submit" 
-          disabled={isLoading || !email} 
+
+        <Button
+          type="submit"
+          disabled={isLoading || !email}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full py-6 text-md mt-4 transition-all flex items-center justify-center"
         >
           {isLoading ? (
