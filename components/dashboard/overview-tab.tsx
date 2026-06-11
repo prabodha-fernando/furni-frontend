@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DollarSign, Package, ShoppingCart, Download, Loader2, Check, Pencil,
-  ShoppingBag, Award, Truck, TrendingUp, AlertTriangle, Trash2, Filter,
-  Activity, ShieldCheck, Sparkles, Clock, ChevronRight, X, Heart,
+  DollarSign, ShoppingCart, Package, AlertTriangle, TrendingUp,
+  Download, Check, ShoppingBag, Truck, Award, ShieldCheck, Filter,
+  Heart, Loader2, Gift, Ticket, Pencil, Trash2, Clock, Sparkles, X, Activity
 } from 'lucide-react'
-import type { Product, CartItem, SystemLog, Order } from './types'
+import type { Order, Product, CartItem, Coupon, SystemLog } from './types'
 
 // ─── Category / status constants ──────────────────────────────────────────────
 
@@ -44,20 +44,24 @@ interface OverviewTabProps {
   setIsCartOpen: (v: boolean) => void
   handleExportReport: () => void
   setIsAddProductOpen: (v: boolean) => void
+  setIsAddRewardOpen: (v: boolean) => void
   handleAddToCart: (id: number) => void
   handleBuyNow: (p: Product) => void
+  handleSendToWishlist: (p: Product) => void
   handleRemoveFromCart: (id: number, qty: number) => void
   handleCartCheckout: () => void
   openEditModal: (p: Product) => void
-  openDeleteConfirm: (product: Product) => void
+  openDeleteConfirm: (p: Product) => void
   wishlistItems: number[]
-  toggleWishlist: (productId: number) => void
+  toggleWishlist: (id: number) => void
+  rewardCatalogue?: (Omit<Coupon, 'claimedAt'> & { isActive?: boolean })[]
+  handleToggleRewardStatus?: (id: number) => void
 }
 
 // ─── KPI icon background helpers (fully spelled out for Tailwind JIT) ─────────
 
 const iconBgMap: Record<string, string> = {
-  blue: 'bg-blue-50 text-blue-600',
+  blue: 'bg-primary/10 text-primary',
   amber: 'bg-amber-50 text-amber-600',
   indigo: 'bg-indigo-50 text-indigo-600',
   rose: 'bg-rose-50 text-rose-600',
@@ -71,17 +75,17 @@ export function OverviewTab({
   totalRevenue, totalCartItems, totalCartAmount, loyaltyPoints, activeListingsCount,
   topProducts, orders, cartItems,
   isExporting, exportSuccess, isCartOpen, setIsCartOpen,
-  handleExportReport, setIsAddProductOpen,
-  handleAddToCart, handleBuyNow, handleRemoveFromCart, handleCartCheckout,
+  handleExportReport, setIsAddProductOpen, setIsAddRewardOpen,
+  handleAddToCart, handleBuyNow, handleSendToWishlist, handleRemoveFromCart, handleCartCheckout,
   openEditModal, openDeleteConfirm,
   wishlistItems, toggleWishlist,
+  rewardCatalogue = [], handleToggleRewardStatus,
 }: OverviewTabProps) {
   return (
     <>
       {/* ── Hero Banner ────────────────────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 overflow-hidden border-none shadow-2xl shadow-blue-900/20 bg-gradient-to-br from-blue-800 to-indigo-950 text-white relative group min-h-[260px] rounded-[2rem]">
-          {/* Static hero image — using Next.js Image for optimised loading */}
+        <Card className="lg:col-span-2 overflow-hidden border-none shadow-2xl shadow-primary/20 bg-gradient-to-br from-primary to-primary/50 text-white relative group min-h-[260px] rounded-[2rem]">
           <div className="absolute inset-0 overflow-hidden">
             <Image
               src="/blue-chairs.jpg"
@@ -94,13 +98,13 @@ export function OverviewTab({
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/70 to-transparent" />
           <CardContent className="relative p-10 h-full flex flex-col justify-center space-y-5 z-10">
-            <Badge className="w-fit bg-blue-400/20 text-blue-100 border-blue-300/20 backdrop-blur-sm font-semibold text-[11px] px-3 py-1 shadow-lg">
+            <Badge className="w-fit bg-blue-400/20 text-primary-foreground border-primary/30/20 backdrop-blur-sm font-semibold text-[11px] px-3 py-1 shadow-lg">
               <Sparkles size={12} className="mr-1.5" /> Premium Collection Live
             </Badge>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight max-w-md leading-[1.15] drop-shadow-md">
               {currentRole === 'admin' ? 'Admin Control Center Active.' : 'Upgrade your living space today.'}
             </h2>
-            <p className="text-blue-100/80 max-w-sm text-sm font-medium leading-relaxed">
+            <p className="text-primary-foreground/80 max-w-sm text-sm font-medium leading-relaxed">
               {currentRole === 'admin'
                 ? `${topProducts.length} products live. ${orders.filter((o) => o.status !== 'Delivered').length} active shipments in transit.`
                 : 'New arrivals in premium furniture. Shop the Nordic Blue armchair series.'}
@@ -123,7 +127,7 @@ export function OverviewTab({
             </div>
           </CardHeader>
           <div className="px-3 pt-4">
-            <svg viewBox="0 0 400 100" className="w-full h-20 text-blue-600 drop-shadow-md">
+            <svg viewBox="0 0 400 100" className="w-full h-20 text-primary drop-shadow-md">
               <defs>
                 <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#2563eb" stopOpacity="0.3" />
@@ -136,7 +140,7 @@ export function OverviewTab({
           </div>
           <CardContent className="pb-5 pt-1 px-6">
             <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
-              <Clock size={13} className="text-blue-500 animate-spin [animation-duration:4s]" /> Real-time data synced
+              <Clock size={13} className="text-primary/80 animate-spin [animation-duration:4s]" /> Real-time data synced
             </p>
           </CardContent>
         </Card>
@@ -222,22 +226,17 @@ export function OverviewTab({
 
           <div className="p-6 grid gap-4 sm:grid-cols-2">
             {filteredProducts.length > 0 ? filteredProducts.map((product) => (
-              <div key={product.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col group hover:border-blue-200 hover:shadow-lg transition-all duration-300 bg-white">
+              <div key={product.id} className="border border-slate-100 rounded-2xl overflow-hidden flex flex-col group hover:border-primary/20 hover:shadow-lg transition-all duration-300 bg-white">
                 <div className="p-4 flex gap-4 items-start">
                   <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center shrink-0 text-2xl overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-300">
                     {product.image
-                      ? (
-                        /* Product images are base64 data URIs from FileReader — next/image
-                           requires a known domain or unoptimised flag for data URIs, so we
-                           intentionally keep a plain <img> here. */
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                      )
+                      ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                       : <span>{product.emoji}</span>}
                   </div>
                   <div className="space-y-1 flex-1 min-w-0">
                     <Badge variant="outline" className="text-[9px] text-slate-400 font-bold px-2 py-0 rounded-md">{product.category}</Badge>
                     <h4 className="font-black text-slate-900 text-sm truncate">{product.name}</h4>
-                    <p className="font-black text-blue-600 text-sm">LKR {product.amount.toLocaleString()}</p>
+                    <p className="font-black text-primary text-sm">LKR {product.amount.toLocaleString()}</p>
                     <p className={`text-[10px] font-bold ${product.stock <= 5 ? 'text-rose-500' : 'text-slate-400'}`}>
                       {product.stock <= 5 ? `⚠️ Only ${product.stock} left!` : `Stock: ${product.stock} units`}
                     </p>
@@ -255,7 +254,7 @@ export function OverviewTab({
                   <span className="text-[10px] text-slate-400 font-bold">{product.sales} sold</span>
                   {currentRole === 'admin' ? (
                     <div className="flex items-center gap-1.5">
-                      <Button size="sm" variant="ghost" onClick={() => openEditModal(product)} className="text-blue-600 hover:bg-blue-50 text-[11px] font-bold gap-1 rounded-xl h-8 px-3">
+                      <Button size="sm" variant="ghost" onClick={() => openEditModal(product)} className="text-primary hover:bg-primary/10 text-[11px] font-bold gap-1 rounded-xl h-8 px-3">
                         <Pencil size={12} /> Edit
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => openDeleteConfirm(product)} className="text-rose-500 hover:bg-rose-50 text-[11px] font-bold gap-1 rounded-xl h-8 px-3">
@@ -267,7 +266,7 @@ export function OverviewTab({
                       <Button size="sm" onClick={() => handleAddToCart(product.id)} className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold h-8 rounded-xl px-3 active:scale-95 transition-transform shadow-sm">
                         + Cart
                       </Button>
-                      <Button size="sm" onClick={() => handleBuyNow(product)} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold h-8 rounded-xl px-3 active:scale-95 transition-transform shadow-sm">
+                      <Button size="sm" onClick={() => handleSendToWishlist(product)} className="bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold h-8 rounded-xl px-3 active:scale-95 transition-transform shadow-sm">
                         Buy Now
                       </Button>
                     </div>
@@ -299,7 +298,7 @@ export function OverviewTab({
           <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto">
             {filteredLogs.map((log) => (
               <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                <div className={`w-1 rounded-full shrink-0 min-h-[2.5rem] ${log.type === 'admin' ? 'bg-blue-500' : log.type === 'customer' ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`} />
+                <div className={`w-1 rounded-full shrink-0 min-h-[2.5rem] ${log.type === 'admin' ? 'bg-primary/80' : log.type === 'customer' ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`} />
                 <div>
                   <p className="text-xs font-bold text-slate-800 leading-snug">{log.message}</p>
                   <p className="text-[10px] text-slate-400 font-medium mt-0.5">{log.time} · Logged securely</p>
@@ -342,11 +341,7 @@ export function OverviewTab({
                     <div key={item.product.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/50 transition-colors">
                       <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-lg shrink-0 overflow-hidden">
                         {item.product.image
-                          ? (
-                            /* User-uploaded product images are base64 data URIs from FileReader.
-                               next/image cannot optimise arbitrary data URIs, so a plain <img> is used. */
-                            <img src={item.product.image} alt="" className="w-full h-full object-cover" />
-                          )
+                          ? <img src={item.product.image} alt="" className="w-full h-full object-cover" />
                           : item.product.emoji}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -368,9 +363,9 @@ export function OverviewTab({
                   <div className="px-5 py-4 border-t bg-gradient-to-r from-slate-50 to-white space-y-3">
                     <div className="flex justify-between text-xs font-black text-slate-900">
                       <span>Total Payable</span>
-                      <span className="text-blue-600 text-sm">LKR {totalCartAmount.toLocaleString()}</span>
+                      <span className="text-primary text-sm">LKR {totalCartAmount.toLocaleString()}</span>
                     </div>
-                    <Button onClick={handleCartCheckout} className="w-full bg-blue-600 hover:bg-blue-700 font-bold text-xs rounded-xl h-10 shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-transform">
+                    <Button onClick={handleCartCheckout} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl h-10 shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
                       Proceed to Checkout
                     </Button>
                   </div>
@@ -378,6 +373,89 @@ export function OverviewTab({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Admin Rewards Management ────────────────────────────────────── */}
+      {currentRole === 'admin' && handleToggleRewardStatus && (
+        <div className="mt-6">
+          <Card className="rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/30 bg-white overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <Gift size={20} className="text-primary" /> Rewards Management
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                  Manage available loyalty offers for customers. Toggle Active status to hide/show them.
+                </p>
+              </div>
+              <Button
+                onClick={() => setIsAddRewardOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-5 gap-2 text-xs shadow-xl shadow-primary/20 font-bold h-10 active:scale-95 transition-transform"
+              >
+                + Add Reward
+              </Button>
+            </div>
+            <div className="p-0">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest pl-6">Reward Title & Code</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Type / Value</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Points Cost</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-6">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rewardCatalogue.map((reward) => (
+                    <tr key={reward.id} className="border-b border-slate-50 hover:bg-slate-50/30 transition-colors group">
+                      <td className="p-4 pl-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${reward.isActive !== false ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'}`}>
+                            <Ticket size={18} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-900">{reward.title}</p>
+                            <Badge variant="outline" className="mt-1 text-[10px] font-bold text-slate-500 rounded px-1.5 uppercase tracking-wider bg-slate-50 border-slate-200">
+                              {reward.code}
+                            </Badge>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-xs font-bold text-slate-700 capitalize">
+                          {reward.discountType === 'percent' ? `${reward.discountValue}% Off` : reward.discountType === 'fixed' ? `LKR ${reward.discountValue} Off` : 'Free Shipping'}
+                        </p>
+                      </td>
+                      <td className="p-4">
+                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-amber-100">
+                          <Award size={12} /> {reward.pointsCost} pts
+                        </span>
+                      </td>
+                      <td className="p-4 text-right pr-6">
+                        <button
+                          onClick={() => handleToggleRewardStatus(reward.id)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${reward.isActive !== false ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-300 ${reward.isActive !== false ? 'translate-x-6 shadow-sm' : 'translate-x-1 shadow-sm'}`} />
+                        </button>
+                        <span className={`block text-[10px] font-bold mt-1 ${reward.isActive !== false ? 'text-emerald-500' : 'text-slate-400'}`}>
+                          {reward.isActive !== false ? 'ACTIVE' : 'HIDDEN'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {rewardCatalogue.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-slate-400 text-sm font-semibold">
+                        No rewards available. Create one to get started.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -396,13 +474,15 @@ export function OverviewTab({
                 ? <><Check className="mr-2 h-3.5 w-3.5" />Downloaded!</>
                 : <><Download className="mr-2 h-3.5 w-3.5" />Export CSV</>}
           </Button>
-          <Button
-            id="add-product-btn"
-            onClick={() => setIsAddProductOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-5 gap-2 text-xs shadow-xl shadow-blue-600/20 font-bold h-10 active:scale-95 transition-transform"
-          >
-            + Add Product
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              id="add-product-btn"
+              onClick={() => setIsAddProductOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-5 gap-2 text-xs shadow-xl shadow-primary/20 font-bold h-10 active:scale-95 transition-transform"
+            >
+              + Add Product
+            </Button>
+          </div>
         </div>
       )}
     </>

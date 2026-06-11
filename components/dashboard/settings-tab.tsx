@@ -72,7 +72,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className={`w-12 h-6 rounded-full transition-colors duration-300 relative outline-none shrink-0 border border-transparent hover:border-slate-300 ${on ? 'bg-blue-600 hover:border-blue-500' : 'bg-slate-200'}`}
+      className={`w-12 h-6 rounded-full transition-colors duration-300 relative outline-none shrink-0 border border-transparent hover:border-slate-300 ${on ? 'bg-primary hover:border-blue-500' : 'bg-slate-200'}`}
     >
       <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] transition-all duration-300 ${on ? 'translate-x-[26px]' : 'translate-x-[2px]'}`} />
     </button>
@@ -279,7 +279,7 @@ export function SettingsTab({
                   onClick={() => setActiveSettingsTab(key)}
                   className={`flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 w-full text-left group border ${activeSettingsTab === key ? 'bg-white shadow-lg shadow-slate-200/50 border-blue-100 translate-x-1' : 'border-transparent hover:bg-white/50 hover:shadow-sm'}`}
                 >
-                  <div className={`p-2.5 rounded-xl mt-0.5 transition-all duration-300 ${activeSettingsTab === key ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-200 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:scale-110'}`}>
+                  <div className={`p-2.5 rounded-xl mt-0.5 transition-all duration-300 ${activeSettingsTab === key ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-slate-200 text-slate-500 group-hover:bg-blue-100 group-hover:text-primary group-hover:scale-110'}`}>
                     <Icon size={18} />
                   </div>
                   <div>
@@ -303,8 +303,10 @@ export function SettingsTab({
                 <form onSubmit={onSaveSettingsSubmit} className="p-8 space-y-8 bg-white">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Title *</Label>
+                      <Label htmlFor="storeName" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Title *</Label>
                       <Input
+                        id="storeName"
+                        name="storeName"
                         value={storeName}
                         onChange={(e) => {
                           setStoreName(e.target.value)
@@ -318,8 +320,10 @@ export function SettingsTab({
                       {storeNameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {storeNameErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Support Email *</Label>
+                      <Label htmlFor="storeEmail" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store Support Email *</Label>
                       <Input
+                        id="storeEmail"
+                        name="storeEmail"
                         type="email"
                         value={storeEmail}
                         onChange={(e) => {
@@ -336,8 +340,10 @@ export function SettingsTab({
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Default Currency *</Label>
+                      <Label htmlFor="currency" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Default Currency *</Label>
                       <Input
+                        id="currency"
+                        name="currency"
                         value={currency}
                         onChange={(e) => {
                           setCurrency(e.target.value)
@@ -351,8 +357,10 @@ export function SettingsTab({
                       {currencyErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {currencyErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Shipping (LKR) *</Label>
+                      <Label htmlFor="shippingFee" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Shipping (LKR) *</Label>
                       <Input
+                        id="shippingFee"
+                        name="shippingFee"
                         type="number"
                         value={shippingFee}
                         onChange={(e) => {
@@ -367,8 +375,10 @@ export function SettingsTab({
                       {shippingFeeErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {shippingFeeErr}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Tax Rate (%) *</Label>
+                      <Label htmlFor="taxRate" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Tax Rate (%) *</Label>
                       <Input
+                        id="taxRate"
+                        name="taxRate"
                         type="number"
                         value={taxRate}
                         onChange={(e) => {
@@ -386,7 +396,7 @@ export function SettingsTab({
                   <div className="pt-4">
                     <div className="border border-slate-200 rounded-2xl p-6 space-y-6 bg-gradient-to-br from-slate-50 to-white shadow-sm">
                       <p className="text-xs font-black text-slate-800 flex items-center gap-2">
-                        <Sparkles size={16} className="text-blue-500" /> Advanced System Toggles
+                        <Sparkles size={16} className="text-primary/80" /> Advanced System Toggles
                       </p>
                       <div className="grid gap-4 lg:grid-cols-2">
                         {[
@@ -397,7 +407,7 @@ export function SettingsTab({
                           { label: 'Multi-Language Support',    desc: 'Enable dynamic store translations',                   state: false,            toggle: () => {} },
                           { label: 'Analytics Telemetry',       desc: 'Send anonymous usage data to server',                 state: true,             toggle: () => {} },
                         ].map(({ label, desc, state, toggle }) => (
-                          <div key={label} className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 hover:shadow-md transition-all group">
+                          <div key={label} className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-primary/20 hover:shadow-md transition-all group">
                             <div className="pr-4">
                               <p className="text-sm font-black text-slate-800 tracking-tight group-hover:text-blue-700 transition-colors">{label}</p>
                               <p className="text-[10px] text-slate-400 font-semibold mt-0.5 leading-snug">{desc}</p>
@@ -409,7 +419,7 @@ export function SettingsTab({
                     </div>
                   </div>
                   <div className="flex justify-end pt-6 border-t border-slate-100">
-                    <Button type="submit" disabled={isSavingSettings} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95 gap-2">
+                    <Button type="submit" disabled={isSavingSettings} className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2">
                       {isSavingSettings ? <><Loader2 className="animate-spin h-4 w-4" />Saving Configuration...</> : saveSuccess ? <><Check className="h-4 w-4" />Saved Successfully</> : <><Save className="h-4 w-4" />Commit Changes</>}
                     </Button>
                   </div>
@@ -474,8 +484,10 @@ export function SettingsTab({
                     <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-2">Change Admin Password</h4>
                     
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
+                      <Label htmlFor="adminCurrPass" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
                       <Input
+                        id="adminCurrPass"
+                        name="adminCurrPass"
                         type="password"
                         placeholder="Enter current password"
                         value={adminCurrPass}
@@ -491,8 +503,10 @@ export function SettingsTab({
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
+                      <Label htmlFor="adminNewPass" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
                       <Input
+                        id="adminNewPass"
+                        name="adminNewPass"
                         type="password"
                         placeholder="At least 6 characters"
                         value={adminNewPass}
@@ -508,8 +522,10 @@ export function SettingsTab({
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
+                      <Label htmlFor="adminConfPass" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
                       <Input
+                        id="adminConfPass"
+                        name="adminConfPass"
                         type="password"
                         placeholder="Repeat new password"
                         value={adminConfPass}
@@ -528,7 +544,7 @@ export function SettingsTab({
                     <Button
                       type="submit"
                       disabled={adminPassSaving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs h-11 px-8 gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform"
+                      className="bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-xs h-11 px-8 gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
                     >
                       {adminPassSaving ? <><Loader2 className="animate-spin h-4 w-4" />Updating...</> : adminPassSuccess ? <><Check className="h-4 w-4" />Updated</> : <><Lock size={14} /> Update Password</>}
                     </Button>
@@ -552,7 +568,7 @@ export function SettingsTab({
                     { label: 'Revenue Milestone Alerts',   desc: 'Celebrate monthly revenue milestones',               on: alertRevenueMilestone,  toggle: () => setAlertRevenueMilestone((v) => !v) },
                     { label: 'System Maintenance Emails',  desc: 'Receive technical maintenance notifications',         on: alertSystemMaintenance, toggle: () => setAlertSystemMaintenance((v) => !v) },
                   ].map(({ label, desc, on, toggle }) => (
-                    <div key={label} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all group">
+                    <div key={label} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/20 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all group">
                       <div>
                         <p className="text-xs font-black text-slate-800 group-hover:text-blue-700 transition-colors">{label}</p>
                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{desc}</p>
@@ -563,7 +579,7 @@ export function SettingsTab({
                   <div className="pt-6 mt-4 border-t border-slate-100 flex justify-end">
                     <Button
                       onClick={() => { addLog('Admin notification preferences saved', 'admin'); toast.success('Alert preferences saved.') }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[13px] h-11 px-8 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform gap-2"
+                      className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-[13px] h-11 px-8 shadow-lg shadow-primary/20 active:scale-95 transition-transform gap-2"
                     >
                       <Save size={14} /> Save Preferences
                     </Button>
@@ -589,7 +605,7 @@ export function SettingsTab({
                   onClick={() => setActiveProfileTab(key)}
                   className={`flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 w-full text-left group border ${activeProfileTab === key ? 'bg-white shadow-lg shadow-slate-200/50 border-blue-100 translate-x-1' : 'border-transparent hover:bg-white/50 hover:shadow-sm'}`}
                 >
-                  <div className={`p-2.5 rounded-xl mt-0.5 transition-all duration-300 ${activeProfileTab === key ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-200 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:scale-110'}`}>
+                  <div className={`p-2.5 rounded-xl mt-0.5 transition-all duration-300 ${activeProfileTab === key ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-slate-200 text-slate-500 group-hover:bg-blue-100 group-hover:text-primary group-hover:scale-110'}`}>
                     <Icon size={18} />
                   </div>
                   <div>
@@ -621,9 +637,9 @@ export function SettingsTab({
                             <img src={profileAvatar} alt="Avatar" className="w-full h-full object-cover" />
                           )
                         : profileName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                      <label className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-all backdrop-blur-sm">
+                      <label htmlFor="avatarUploadBig" className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-all backdrop-blur-sm">
                         <Camera size={20} className="text-white" />
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        <input id="avatarUploadBig" name="avatarUploadBig" type="file" accept="image/*" className="hidden" onChange={(e) => {
                           if (e.target.files?.[0]) {
                             const reader = new FileReader()
                             reader.onload = (ev) => { if (ev.target?.result) setProfileAvatar(ev.target.result as string) }
@@ -635,9 +651,9 @@ export function SettingsTab({
                     <div>
                       <p className="text-lg font-black text-slate-900">{profileName}</p>
                       <p className="text-xs text-slate-400 font-semibold mt-0.5">{profileEmail}</p>
-                      <label className="mt-2 text-[11px] font-black text-blue-600 flex items-center gap-1.5 hover:text-blue-700 cursor-pointer w-fit bg-blue-50 px-2 py-1 rounded-md transition-colors">
+                      <label htmlFor="avatarUploadText" className="mt-2 text-[11px] font-black text-primary flex items-center gap-1.5 hover:text-blue-700 cursor-pointer w-fit bg-primary/10 px-2 py-1 rounded-md transition-colors">
                         <Camera size={12} /> Upload New Photo
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        <input id="avatarUploadText" name="avatarUploadText" type="file" accept="image/*" className="hidden" onChange={(e) => {
                           if (e.target.files?.[0]) {
                             const reader = new FileReader()
                             reader.onload = (ev) => { if (ev.target?.result) setProfileAvatar(ev.target.result as string) }
@@ -649,8 +665,10 @@ export function SettingsTab({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name *</Label>
+                      <Label htmlFor="profileName" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name *</Label>
                       <Input
+                        id="profileName"
+                        name="profileName"
                         value={profileName}
                         onChange={(e) => {
                           setProfileName(e.target.value)
@@ -664,8 +682,10 @@ export function SettingsTab({
                       {profileNameErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileNameErr}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address *</Label>
+                      <Label htmlFor="profileEmail" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address *</Label>
                       <Input
+                        id="profileEmail"
+                        name="profileEmail"
                         type="email"
                         value={profileEmail}
                         onChange={(e) => {
@@ -682,10 +702,12 @@ export function SettingsTab({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number *</Label>
+                      <Label htmlFor="profilePhone" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone Number *</Label>
                       <div className="relative">
                         <Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold" />
                         <Input
+                          id="profilePhone"
+                          name="profilePhone"
                           value={profilePhone}
                           onChange={(e) => {
                             setProfilePhone(e.target.value)
@@ -700,8 +722,10 @@ export function SettingsTab({
                       {profilePhoneErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profilePhoneErr}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">City *</Label>
+                      <Label htmlFor="profileCity" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">City *</Label>
                       <Input
+                        id="profileCity"
+                        name="profileCity"
                         value={profileCity}
                         onChange={(e) => {
                           setProfileCity(e.target.value)
@@ -716,10 +740,12 @@ export function SettingsTab({
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address *</Label>
+                    <Label htmlFor="profileAddress" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Address *</Label>
                     <div className="relative">
                       <MapPin size={14} className="absolute left-4 top-3.5 text-slate-400" />
                       <Input
+                        id="profileAddress"
+                        name="profileAddress"
                         value={profileAddress}
                         onChange={(e) => {
                           setProfileAddress(e.target.value)
@@ -734,12 +760,12 @@ export function SettingsTab({
                     {profileAddressErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {profileAddressErr}</p>}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Short Bio</Label>
-                    <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={3}
+                    <Label htmlFor="profileBio" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Short Bio</Label>
+                    <textarea id="profileBio" name="profileBio" value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={3}
                       className="w-full border border-slate-200 bg-slate-50 rounded-xl p-4 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 shadow-inner resize-none transition-all" />
                   </div>
                   <div className="flex justify-end pt-4 border-t border-slate-100">
-                    <Button type="submit" disabled={isSavingProfile} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95 gap-2">
+                    <Button type="submit" disabled={isSavingProfile} className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2">
                       {isSavingProfile ? <><Loader2 className="animate-spin h-4 w-4" />Saving...</> : profileSuccess ? <><Check className="h-4 w-4" />Updated Successfully</> : <><Save className="h-4 w-4" />Save Profile Changes</>}
                     </Button>
                   </div>
@@ -766,8 +792,10 @@ export function SettingsTab({
                   </div>
                   <form onSubmit={onSavePasswordSubmit} className="space-y-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
+                      <Label htmlFor="currentPassword" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password *</Label>
                       <Input
+                        id="currentPassword"
+                        name="currentPassword"
                         type="password"
                         placeholder="Enter current password"
                         value={currentPassword}
@@ -783,8 +811,10 @@ export function SettingsTab({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
+                        <Label htmlFor="newPassword" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password *</Label>
                         <Input
+                          id="newPassword"
+                          name="newPassword"
                           type="password"
                           placeholder="Min 6 characters"
                           value={newPassword}
@@ -799,8 +829,10 @@ export function SettingsTab({
                         {newPassErr && <p className="text-[10px] font-bold text-red-600 mt-1 pl-1">⚠️ {newPassErr}</p>}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
+                        <Label htmlFor="confirmPassword" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</Label>
                         <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
                           type="password"
                           placeholder="Repeat new password"
                           value={confirmPassword}
@@ -817,7 +849,7 @@ export function SettingsTab({
                     </div>
                     {passwordError && <p className="text-xs text-rose-600 font-black flex items-center gap-1.5 bg-rose-50 p-3 rounded-lg"><AlertTriangle size={14} />{passwordError}</p>}
                     <div className="flex justify-end pt-4 border-t border-slate-100">
-                      <Button type="submit" disabled={isSavingPassword} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-blue-600/20 transition-all hover:scale-105 active:scale-95 gap-2">
+                      <Button type="submit" disabled={isSavingPassword} className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-[13px] h-12 px-8 shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 gap-2">
                         {isSavingPassword ? <><Loader2 className="animate-spin h-4 w-4" />Updating...</> : passwordSuccess ? <><Check className="h-4 w-4" />Password Updated</> : <><Lock className="h-4 w-4" />Update Password</>}
                       </Button>
                     </div>
@@ -839,7 +871,7 @@ export function SettingsTab({
                     { label: 'Email Notifications',  desc: 'General account and billing emails',                 state: emailNotifs,  toggle: () => setEmailNotifs(!emailNotifs) },
                     { label: 'Promotions & Offers',  desc: 'Seasonal sale alerts and exclusive discount codes',  state: promoNotifs,  toggle: () => setPromoNotifs(!promoNotifs) },
                   ].map(({ label, desc, state, toggle }) => (
-                    <div key={label} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all group">
+                    <div key={label} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-primary/20 hover:shadow-md bg-slate-50/50 hover:bg-white transition-all group">
                       <div>
                         <p className="text-xs font-black text-slate-800 group-hover:text-blue-700 transition-colors">{label}</p>
                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{desc}</p>
@@ -850,7 +882,7 @@ export function SettingsTab({
                   <div className="pt-6 mt-4 border-t border-slate-100 flex justify-end">
                     <Button
                       onClick={() => { addLog('Customer notification preferences saved', 'customer'); toast.success('Preferences saved!') }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[13px] h-11 px-8 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform gap-2"
+                      className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-[13px] h-11 px-8 shadow-lg shadow-primary/20 active:scale-95 transition-transform gap-2"
                     >
                       <Save size={14} /> Save Preferences
                     </Button>

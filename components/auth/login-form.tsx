@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -216,16 +217,15 @@ export function LoginForm() {
         </div>
 
         <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-2">
+            <Checkbox
               id="remember"
               disabled={isEmailLoading || isGoogleLoading}
-              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 accent-blue-600 cursor-pointer disabled:opacity-50"
+              className="data-checked:bg-blue-600 data-checked:border-blue-600"
             />
-            <label htmlFor="remember" className="text-sm text-zinc-900 font-medium cursor-pointer">
+            <Label htmlFor="remember" className="text-sm text-zinc-900 font-medium cursor-pointer">
               Remember Me
-            </label>
+            </Label>
           </div>
           <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:underline">
             Forgot Password

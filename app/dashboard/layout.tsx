@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense, useEffect } from 'react'
+import { useState, Suspense, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -48,6 +48,7 @@ function NotificationIcon({ type }: { type: Notification['type'] }) {
     case 'stock':   return <AlertTriangle size={15} className="text-amber-500" />
     case 'success': return <CheckCircle size={15} className="text-emerald-600" />
     case 'warning': return <AlertTriangle size={15} className="text-rose-500" />
+    case 'system':  return <Settings size={15} className="text-slate-500" />
     default:        return <Info size={15} className="text-slate-500" />
   }
 }
@@ -58,8 +59,38 @@ function notificationIconBg(type: Notification['type']): string {
     case 'stock':   return 'bg-amber-50'
     case 'success': return 'bg-emerald-50'
     case 'warning': return 'bg-rose-50'
+    case 'system':  return 'bg-slate-50'
     default:        return 'bg-slate-50'
   }
+}
+
+function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(initialValue)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    try {
+      const item = window.localStorage.getItem(key)
+      if (item) setStoredValue(JSON.parse(item))
+    } catch (error) {
+      console.error(error)
+    }
+  }, [key])
+
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value
+      setStoredValue(valueToStore)
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore))
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }, [key, storedValue])
+
+  return [mounted ? storedValue : initialValue, setValue] as const
 }
 
 // ─── Layout content ───────────────────────────────────────────────────────────
@@ -82,8 +113,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const currentRole = ((session?.user as { role?: string })?.role ?? 'customer') as 'admin' | 'customer'
 
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notifications, setNotifications] = useLocalStorage<Notification[]>('globalNotifications', INITIAL_NOTIFICATIONS)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // collapsed by default on all screen sizes
 
   // Read profile overrides stored by the profile settings form
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string; avatar?: string } | null>(null)
@@ -97,7 +128,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
     fetchUser()
     window.addEventListener('userUpdated', fetchUser)
-    return () => window.removeEventListener('userUpdated', fetchUser)
+
+    const handleNewNotification = (e: Event) => {
+      const customEvent = e as CustomEvent<Omit<Notification, 'id' | 'time' | 'read'>>;
+      setNotifications(prev => [{
+        id: Date.now(),
+        ...customEvent.detail,
+        time: 'Just now',
+        read: false
+      }, ...prev]);
+    };
+    window.addEventListener('newNotification', handleNewNotification);
+
+    return () => {
+      window.removeEventListener('userUpdated', fetchUser)
+      window.removeEventListener('newNotification', handleNewNotification)
+    }
   }, [])
 
   // Redirect unauthenticated users to the login page
@@ -169,23 +215,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-[#f8fafc]">
 
-      {/* Mobile sidebar overlay */}
+      {/* Overlay — closes sidebar on click, shown on ALL sizes when open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-30 sm:hidden"
+          className="fixed inset-0 bg-black/40 z-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-4 top-4 bottom-4 z-40 w-64 flex flex-col rounded-3xl glass-panel shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} sm:translate-x-0 overflow-hidden border border-white/80 bg-white/60`}>
+      {/* Sidebar — slide-in drawer on all screen sizes */}
+      <aside className={`fixed inset-y-0 left-4 top-4 bottom-4 z-40 w-64 flex flex-col rounded-3xl glass-panel shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+2rem)]'} overflow-hidden border border-white/80 bg-white/60`}>
 
         {/* Logo */}
         <div className="flex h-[72px] items-center justify-between px-6 border-b border-slate-200/50 bg-white/40">
           <button onClick={() => handleTabNav('overview')} className="flex items-center gap-2 font-black text-2xl tracking-tighter text-blue-600 outline-none hover:scale-105 transition-transform duration-300">
             🛋️ <span className="text-slate-900 drop-shadow-sm">Furni.</span>
           </button>
-          <button onClick={() => setSidebarOpen(false)} className="sm:hidden p-1.5 rounded-full bg-white shadow-sm text-slate-400 hover:text-slate-900 transition-colors">
+          {/* Close button — visible at all screen sizes */}
+          <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-full bg-white shadow-sm text-slate-400 hover:text-slate-900 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -251,16 +298,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main area */}
-      <div className="flex flex-col sm:pl-64 w-full">
+      {/* Main area — always full-width since sidebar is an overlay */}
+      <div className="flex flex-col w-full">
 
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-white/40 bg-white/60 px-4 backdrop-blur-2xl sm:px-8 gap-4 shadow-[0_4px_30px_rgb(0,0,0,0.02)]">
 
-          {/* Mobile hamburger */}
+          {/* Hamburger — visible on ALL screen sizes to toggle the sidebar */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="sm:hidden p-2 text-slate-500 hover:bg-slate-100/50 rounded-xl transition-colors"
+            className="p-2 text-slate-500 hover:bg-slate-100/50 rounded-xl transition-colors"
           >
             <Menu size={20} />
           </button>
