@@ -90,7 +90,7 @@
   --popover-foreground: oklch(0.18 0.02 60);
 
   /* Primary — Furni Blue (main CTA, links) */
-  --primary: oklch(60.699% 0.20755 25.945);
+  --primary: oklch(0.62 0.16 255);
   /* deep vibrant blue */
   --primary-foreground: oklch(0.99 0 0);
 
@@ -107,7 +107,7 @@
   --accent-foreground: oklch(0.28 0.04 150);
 
   /* Utility */
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.62 0.16 255);
   --border: oklch(0.91 0.008 75);
   --input: oklch(0.91 0.008 75);
   --ring: oklch(0.62 0.16 255);
