@@ -253,8 +253,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               key={tab}
               onClick={() => handleTabNav(tab)}
               className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left relative overflow-hidden group ${activeTab === tab
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
-                  : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
+                : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
                 }`}
             >
               {activeTab === tab && <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] animate-[shimmer_2s_infinite]" />}
@@ -271,8 +271,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => handleTabNav('settings')}
               className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left group ${activeTab === 'settings'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
-                  : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
+                : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
                 }`}
             >
               <Settings size={18} className={activeTab === 'settings' ? 'text-blue-100' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
