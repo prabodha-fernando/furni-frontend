@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Premium Furniture Dashboard',
-  description: 'Advanced admin and customer portal',
+  title: 'Furni — Premium Furniture',
+  description: 'Discover premium furniture crafted for modern living. Shop curated collections at Furni.',
 }
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
     >
-      <body className="min-h-full flex flex-col font-sans selection:bg-blue-500/30">
+      <body className="min-h-full flex flex-col font-sans selection:bg-primary/25 selection:text-primary-foreground">
         <SessionProvider>
           <ToastProvider>{children}</ToastProvider>
         </SessionProvider>

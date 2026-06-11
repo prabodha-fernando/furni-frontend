@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,9 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   X, Upload, Check, Plus, Trash2, Heart, ChevronRight, Percent,
-  Truck, ShieldCheck, Star, Award, Loader2, Image as ImageIcon
+  Truck, ShieldCheck, Star, Award, Loader2, Image as ImageIcon,
+  Gift
 } from 'lucide-react'
-import type { Product } from './types'
+import type { Product, Coupon } from './types'
 
 // ─── Category constants ────────────────────────────────────────────────────────
 
@@ -24,6 +26,7 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 interface ModalsProps {
   currentRole: 'admin' | 'customer'
   isAddProductOpen: boolean; setIsAddProductOpen: (v: boolean) => void
+  isAddRewardOpen: boolean; setIsAddRewardOpen: (v: boolean) => void
   isEditProductOpen: boolean; setIsEditProductOpen: (v: boolean) => void
   isDeleteConfirmOpen: boolean; setIsDeleteConfirmOpen: (v: boolean) => void
   productToDelete: Product | null; setProductToDelete: (v: Product | null) => void
@@ -36,6 +39,7 @@ interface ModalsProps {
   handleAddProductSubmit: (e: React.FormEvent) => void
   handleEditProductSubmit: (e: React.FormEvent) => void
   handleDeleteProduct: () => void
+  handleAddRewardSubmit: (coupon: Omit<Coupon, 'claimedAt'>) => void
   resetFormFields: () => void
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
@@ -45,17 +49,26 @@ interface ModalsProps {
 export function DashboardModals({
   currentRole,
   isAddProductOpen, setIsAddProductOpen,
+  isAddRewardOpen, setIsAddRewardOpen,
   isEditProductOpen, setIsEditProductOpen,
   isDeleteConfirmOpen, setIsDeleteConfirmOpen,
   productToDelete, setProductToDelete, selectedProductToEdit, setSelectedProductToEdit,
   prodName, setProdName, prodPrice, setProdPrice,
   prodCategory, setProdCategory, prodStock, setProdStock,
   prodImage, setProdImage,
-  handleAddProductSubmit, handleEditProductSubmit, handleDeleteProduct,
+  handleAddProductSubmit, handleEditProductSubmit, handleDeleteProduct, handleAddRewardSubmit,
   resetFormFields, handleImageUpload,
 }: ModalsProps) {
   const fileInputRef     = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
+
+  // Reward Modal State
+  const [rewardTitle, setRewardTitle] = useState('')
+  const [rewardCode, setRewardCode] = useState('')
+  const [rewardType, setRewardType] = useState<'percent' | 'fixed' | 'shipping'>('percent')
+  const [rewardValue, setRewardValue] = useState('')
+  const [rewardPoints, setRewardPoints] = useState('')
+  const [rewardErr, setRewardErr] = useState('')
 
   const [nameErr, setNameErr] = useState('')
   const [priceErr, setPriceErr] = useState('')
@@ -114,6 +127,38 @@ export function DashboardModals({
     setSelectedProductToEdit(null)
     resetFormFields()
     setNameErr(''); setPriceErr(''); setStockErr('')
+  }
+
+  const onAddRewardSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rewardTitle || !rewardCode || !rewardValue || !rewardPoints) {
+      setRewardErr('Please fill in all fields')
+      return
+    }
+    const val = Number(rewardValue)
+    const pts = Number(rewardPoints)
+    if (isNaN(val) || isNaN(pts) || val <= 0 || pts <= 0) {
+      setRewardErr('Value and Points must be positive numbers')
+      return
+    }
+
+    handleAddRewardSubmit({
+      id: Date.now(),
+      title: rewardTitle,
+      code: rewardCode,
+      discountType: rewardType,
+      discountValue: val,
+      pointsCost: pts
+    })
+    
+    // Reset and close
+    setRewardTitle('')
+    setRewardCode('')
+    setRewardType('percent')
+    setRewardValue('')
+    setRewardPoints('')
+    setRewardErr('')
+    setIsAddRewardOpen(false)
   }
 
   return (
@@ -202,7 +247,6 @@ export function DashboardModals({
                   <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-slate-100 cursor-pointer group transition-all duration-300 hover:border-blue-400">
                     {prodImage ? (
                       <div className="relative w-32 h-32 rounded-xl overflow-hidden border shadow-md group-hover:scale-105 transition-transform">
-                        {/* Preview of user-uploaded product image (base64 data URI from FileReader) */}
                         <img src={prodImage} alt="Preview" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center">
                           <p className="text-white text-[10px] font-black uppercase tracking-wider">Change</p>
@@ -211,7 +255,7 @@ export function DashboardModals({
                     ) : (
                       <>
                         <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                          <ImageIcon size={20} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                          <ImageIcon size={20} className="text-slate-400 group-hover:text-primary/80 transition-colors" />
                         </div>
                         <p className="text-xs font-black text-slate-600">Click to upload product image</p>
                         <p className="text-[10px] text-slate-400 font-semibold mt-1">PNG, JPG up to 10MB</p>
@@ -224,7 +268,7 @@ export function DashboardModals({
             
             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
               <Button type="button" variant="outline" onClick={handleCancelAdd} className="rounded-xl px-6 font-bold text-xs h-11 bg-white hover:bg-slate-100">Cancel</Button>
-              <Button form="add-product-form" type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 font-bold text-xs h-11 gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform">
+              <Button form="add-product-form" type="submit" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-8 font-bold text-xs h-11 gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
                 <Plus size={14} /> Publish Product
               </Button>
             </div>
@@ -321,7 +365,7 @@ export function DashboardModals({
                     ) : (
                       <>
                         <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                          <Upload size={16} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                          <Upload size={16} className="text-slate-400 group-hover:text-primary/80 transition-colors" />
                         </div>
                         <p className="text-xs font-black text-slate-600">Click to upload new photo</p>
                       </>
@@ -342,27 +386,95 @@ export function DashboardModals({
       )}
 
       {/* ── Delete Confirm Modal ── */}
-      {isDeleteConfirmOpen && productToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-4">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl border border-slate-100 p-8 relative animate-in zoom-in-95 duration-200 text-center flex flex-col items-center">
-            <div className="w-20 h-20 bg-rose-50 border-4 border-white shadow-lg rounded-full flex items-center justify-center mb-6 absolute -top-10">
-              <Trash2 size={32} className="text-rose-600" />
-            </div>
-            <div className="mt-8 space-y-3">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Delete Product?</h2>
-              <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                You are about to permanently remove <br/><span className="font-black text-slate-900">&quot;{productToDelete.name}&quot;</span><br/> from the catalog. This cannot be undone.
-              </p>
-            </div>
-            <div className="flex gap-3 justify-center w-full mt-8">
-              <Button variant="outline" onClick={() => { setIsDeleteConfirmOpen(false); setProductToDelete(null) }} className="flex-1 rounded-xl font-bold text-xs h-11 bg-slate-50 border-transparent hover:bg-slate-100 hover:border-slate-200">Cancel</Button>
-              <Button onClick={handleDeleteProduct} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs h-11 gap-2 shadow-lg shadow-rose-600/20 active:scale-95 transition-transform">
-                <Trash2 size={14} /> Delete
-              </Button>
-            </div>
+      <AnimatePresence>
+        {isDeleteConfirmOpen && productToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl border border-slate-100 p-8 relative text-center flex flex-col items-center">
+              <div className="w-20 h-20 bg-rose-50 border-4 border-white shadow-lg rounded-full flex items-center justify-center mb-6 absolute -top-10">
+                <Trash2 size={32} className="text-rose-600" />
+              </div>
+              <div className="mt-8 space-y-3">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Delete Product?</h2>
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                  You are about to permanently remove <br/><span className="font-black text-slate-900">&quot;{productToDelete.name}&quot;</span><br/> from the catalog. This cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-center w-full mt-8">
+                <Button variant="outline" onClick={() => { setIsDeleteConfirmOpen(false); setProductToDelete(null) }} className="flex-1 rounded-xl font-bold text-xs h-11 bg-slate-50 border-transparent hover:bg-slate-100 hover:border-slate-200">Cancel</Button>
+                <Button onClick={handleDeleteProduct} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs h-11 gap-2 shadow-lg shadow-rose-600/20 active:scale-95 transition-transform">
+                  <Trash2 size={14} /> Delete
+                </Button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* ── Add Reward Modal ── */}
+      <AnimatePresence>
+        {isAddRewardOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddRewardOpen(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-lg">
+              <Card className="rounded-[2rem] border-none shadow-2xl overflow-hidden bg-white">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                      <Gift size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-xl">Create Reward</h3>
+                      <p className="text-amber-100 text-xs font-semibold">Add a new offer to the Loyalty Catalogue</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsAddRewardOpen(false)} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={onAddRewardSubmit} className="p-8 space-y-6">
+                  {rewardErr && <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl border border-rose-100">{rewardErr}</div>}
+                  
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="col-span-2 space-y-2">
+                      <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Reward Title</Label>
+                      <Input value={rewardTitle} onChange={(e) => setRewardTitle(e.target.value)} placeholder="e.g. 20% Off Chairs" className="h-11 rounded-xl bg-slate-50 border-slate-200" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Promo Code</Label>
+                      <Input value={rewardCode} onChange={(e) => setRewardCode(e.target.value.toUpperCase())} placeholder="e.g. SUMMER20" className="h-11 rounded-xl bg-slate-50 border-slate-200 uppercase" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Points Cost</Label>
+                      <Input type="number" value={rewardPoints} onChange={(e) => setRewardPoints(e.target.value)} placeholder="e.g. 500" className="h-11 rounded-xl bg-slate-50 border-slate-200" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Discount Type</Label>
+                      <select value={rewardType} onChange={(e) => setRewardType(e.target.value as any)} className="w-full h-11 rounded-xl bg-slate-50 border border-slate-200 px-3 text-sm font-medium outline-none focus:border-amber-400">
+                        <option value="percent">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (LKR)</option>
+                        <option value="shipping">Free Shipping</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Value</Label>
+                      <Input type="number" value={rewardValue} onChange={(e) => setRewardValue(e.target.value)} placeholder={rewardType === 'percent' ? 'e.g. 20' : 'e.g. 1500'} className="h-11 rounded-xl bg-slate-50 border-slate-200" disabled={rewardType === 'shipping'} />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-3">
+                    <Button type="button" variant="ghost" onClick={() => setIsAddRewardOpen(false)} className="rounded-xl font-bold hover:bg-slate-100">Cancel</Button>
+                    <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold px-6 h-11 shadow-lg shadow-amber-500/30">Add Reward</Button>
+                  </div>
+                </form>
+              </Card>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

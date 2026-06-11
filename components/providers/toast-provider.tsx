@@ -5,11 +5,13 @@ import { ToastContext } from '@/hooks/use-toast'
 import { Toast } from '@/components/ui/toast'
 import type { ToastItem, ToastVariant } from '@/hooks/use-toast'
 
+let nextToastId = 0
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const addToast = useCallback((message: string, variant: ToastVariant = 'info') => {
-    const id = Date.now()
+    const id = Date.now() + (nextToastId++)
     setToasts((prev) => [...prev, { id, message, variant }])
   }, [])
 

@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Mail, Truck, Check, ChevronRight, Package, Clock, MapPin,
   Search, Filter, ArrowUpRight, ShoppingBag, CheckCircle2,
-  Loader2, Copy, ExternalLink, RotateCcw, FileText,
+  Loader2, Copy, ExternalLink, RotateCcw, FileText, Trash2,
 } from 'lucide-react'
 import type { Order } from './types'
 
@@ -40,6 +41,7 @@ interface OrdersTabProps {
   selectedOrderToTrack: string
   setSelectedOrderToTrack: (id: string) => void
   handleStatusChange: (id: string, status: Order['status']) => void
+  handleDeleteOrder: (id: string) => void
   handleNotifyClient: (order: Order) => void
 }
 
@@ -49,7 +51,7 @@ export function OrdersTab({
   currentRole, filteredOrders, orders,
   orderSearch, setOrderSearch, orderStatusFilter, setOrderStatusFilter,
   selectedOrderToTrack, setSelectedOrderToTrack,
-  handleStatusChange, handleNotifyClient,
+  handleStatusChange, handleDeleteOrder, handleNotifyClient,
 }: OrdersTabProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [notifyingId, setNotifyingId] = useState<string | null>(null)
@@ -89,19 +91,19 @@ export function OrdersTab({
                 </div>
                 <div className="flex gap-3 flex-wrap">
                   <div className="relative group">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary/80 transition-colors" size={14} />
                     <input
                       type="text"
                       placeholder="Search orders..."
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
-                      className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl pl-9 pr-4 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-400/30 focus:bg-white/20 w-52 text-white placeholder:text-indigo-300 transition-all"
+                      className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl pl-9 pr-4 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/30 focus:bg-white/20 w-52 text-white placeholder:text-indigo-300 transition-all"
                     />
                   </div>
                   <select
                     value={orderStatusFilter}
                     onChange={(e) => setOrderStatusFilter(e.target.value)}
-                    className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none cursor-pointer focus:ring-2 focus:ring-blue-400/30 transition-all"
+                    className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none cursor-pointer focus:ring-2 focus:ring-primary/30 transition-all"
                   >
                     <option value="All" className="text-slate-900">All Statuses</option>
                     <option value="Pending" className="text-slate-900">Pending</option>
@@ -137,11 +139,17 @@ export function OrdersTab({
 
             {/* Order rows */}
             <div className="divide-y divide-slate-100">
-              {filteredOrders.map((order) => {
+              {filteredOrders.map((order, rowIndex) => {
                 const cfg = STATUS_CONFIG[order.status]
                 const StatusIcon = cfg.icon
                 return (
-                  <div key={order.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-slate-50/50 transition-colors group">
+                  <motion.div
+                    key={order.id}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: rowIndex * 0.06 }}
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-slate-50/50 transition-colors group"
+                  >
                     {/* Order info */}
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       <div className={`w-10 h-10 rounded-xl ${cfg.bg} ${cfg.text} flex items-center justify-center shrink-0 shadow-sm border ${cfg.border}`}>
@@ -151,7 +159,7 @@ export function OrdersTab({
                         <div className="flex items-center gap-2 mb-0.5">
                           <button
                             onClick={() => copyOrderId(order.id)}
-                            className="text-sm font-black text-slate-900 hover:text-blue-600 transition-colors flex items-center gap-1.5"
+                            className="text-sm font-black text-slate-900 hover:text-primary transition-colors flex items-center gap-1.5"
                           >
                             {order.id}
                             {copiedId === order.id
@@ -178,7 +186,7 @@ export function OrdersTab({
                     <select
                       value={order.status}
                       onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
-                      className={`text-[11px] font-black border rounded-xl px-3 py-2 outline-none cursor-pointer transition-all shadow-sm ${cfg.bg} ${cfg.text} ${cfg.border} hover:shadow-md focus:ring-2 focus:ring-blue-400/20`}
+                      className={`text-[11px] font-black border rounded-xl px-3 py-2 outline-none cursor-pointer transition-all shadow-sm ${cfg.bg} ${cfg.text} ${cfg.border} hover:shadow-md focus:ring-2 focus:ring-primary/20`}
                     >
                       <option value="Pending">⏳ Pending</option>
                       <option value="Processing">🔄 Processing</option>
@@ -195,14 +203,24 @@ export function OrdersTab({
                       className={`rounded-xl text-xs font-bold gap-1.5 h-9 px-4 transition-all shrink-0 ${
                         notifyingId === order.id
                           ? 'border-emerald-300 bg-emerald-50 text-emerald-600'
-                          : 'border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50'
+                          : 'border-slate-200 text-slate-500 hover:text-primary hover:border-primary/20 hover:bg-primary/10'
                       }`}
                     >
                       {notifyingId === order.id
                         ? <><CheckCircle2 size={14} /> Sent!</>
                         : <><Mail size={14} /> Notify</>}
                     </Button>
-                  </div>
+
+                    {/* Delete button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteOrder(order.id)}
+                      className="rounded-xl text-xs font-bold h-9 w-9 p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </motion.div>
                 )
               })}
               {filteredOrders.length === 0 && (
@@ -239,7 +257,7 @@ export function OrdersTab({
               <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <div className="w-10 h-10 bg-blue-100 text-primary rounded-xl flex items-center justify-center shadow-sm">
                       <ShoppingBag size={20} />
                     </div>
                     <div>
@@ -251,7 +269,7 @@ export function OrdersTab({
               </div>
 
               <div className="divide-y divide-slate-50">
-                {filteredOrders.length > 0 ? filteredOrders.map((order) => {
+                {filteredOrders.length > 0 ? filteredOrders.map((order, rowIndex) => {
                   const isSelected = selectedOrderToTrack === order.id
                   const cfg = STATUS_CONFIG[order.status]
                   const StatusIcon = cfg.icon
@@ -260,18 +278,21 @@ export function OrdersTab({
                   const progress = Math.round((completedSteps / totalSteps) * 100)
 
                   return (
-                    <div
+                    <motion.div
                       key={order.id}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: rowIndex * 0.07 }}
                       onClick={() => setSelectedOrderToTrack(order.id)}
                       className={`p-5 transition-all duration-300 cursor-pointer group relative ${
                         isSelected
-                          ? 'bg-blue-50/50 shadow-inner'
+                          ? 'bg-primary/10/50 shadow-inner'
                           : 'hover:bg-slate-50/50'
                       }`}
                     >
                       {/* Selection indicator */}
                       {isSelected && (
-                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-blue-600 rounded-r-full" />
+                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-primary rounded-r-full" />
                       )}
 
                       <div className="flex items-start gap-4">
@@ -294,7 +315,7 @@ export function OrdersTab({
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-base font-black text-slate-900">LKR {order.total.toLocaleString()}</p>
-                              <div className="flex items-center justify-end gap-1 mt-1.5 text-blue-600">
+                              <div className="flex items-center justify-end gap-1 mt-1.5 text-primary">
                                 <span className="text-[10px] font-black">Track</span>
                                 <ChevronRight size={12} className={`transition-transform ${isSelected ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} />
                               </div>
@@ -321,7 +342,7 @@ export function OrdersTab({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   )
                 }) : (
                   <div className="text-center py-20">
@@ -374,13 +395,13 @@ export function OrdersTab({
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tracking Code</p>
                         <button
                           onClick={() => copyOrderId(tracked.id)}
-                          className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                          className="text-[10px] font-bold text-primary hover:text-blue-700 flex items-center gap-1 transition-colors"
                         >
                           {copiedId === tracked.id ? <><CheckCircle2 size={11} /> Copied!</> : <><Copy size={11} /> Copy</>}
                         </button>
                       </div>
                       <p className="text-lg font-black text-slate-900">{tracked.id}</p>
-                      <p className="text-xs font-bold text-blue-600 mt-1 truncate">{tracked.items}</p>
+                      <p className="text-xs font-bold text-primary mt-1 truncate">{tracked.items}</p>
                       <div className="flex items-center gap-2 mt-3">
                         <Badge className={`text-[9px] font-black border-none ${BADGE_STYLES[tracked.status]}`}>
                           {tracked.status}
@@ -403,7 +424,7 @@ export function OrdersTab({
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 shadow-sm ${
                                 step.completed
                                   ? isActive
-                                    ? 'bg-blue-600 border-blue-600 shadow-blue-500/30 scale-110 ring-4 ring-blue-100'
+                                    ? 'bg-primary border-primary shadow-blue-500/30 scale-110 ring-4 ring-blue-100'
                                     : 'bg-emerald-500 border-emerald-500'
                                   : 'bg-white border-slate-200'
                               }`}>
@@ -435,8 +456,8 @@ export function OrdersTab({
                                 </p>
                               )}
                               {isActive && (
-                                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-black text-blue-600 bg-blue-50 rounded-full px-2.5 py-1 w-fit border border-blue-100">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-black text-primary bg-primary/10 rounded-full px-2.5 py-1 w-fit border border-blue-100">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse" />
                                   Current Stage
                                 </div>
                               )}

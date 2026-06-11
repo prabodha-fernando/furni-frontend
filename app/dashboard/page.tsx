@@ -1,22 +1,23 @@
 'use client'
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-import { OverviewTab }                    from '@/components/dashboard/overview-tab'
-import { OrdersTab }                      from '@/components/dashboard/orders-tab'
-import { AnalyticsTab }                   from '@/components/dashboard/analytics-tab'
-import { CustomersTab }                   from '@/components/dashboard/customers-tab'
-import { SettingsTab }                    from '@/components/dashboard/settings-tab'
-import { CollectionsTab, RewardsTab }     from '@/components/dashboard/collections-rewards-tabs'
-import { DashboardModals }                from '@/components/dashboard/modals'
+import { OverviewTab } from '@/components/dashboard/overview-tab'
+import { OrdersTab } from '@/components/dashboard/orders-tab'
+import { AnalyticsTab } from '@/components/dashboard/analytics-tab'
+import { CustomersTab } from '@/components/dashboard/customers-tab'
+import { SettingsTab } from '@/components/dashboard/settings-tab'
+import { CollectionsTab, RewardsTab } from '@/components/dashboard/collections-rewards-tabs'
+import { DashboardModals } from '@/components/dashboard/modals'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-import type { Order, Customer, Ticket, Product, CartItem, SystemLog } from '../../components/dashboard/types'
+import type { Order, Customer, Ticket, Product, CartItem, SystemLog, Coupon } from '../../components/dashboard/types'
+import { REWARD_CATALOGUE } from '@/components/dashboard/collections-rewards-tabs'
 
 // ─── Static constants ─────────────────────────────────────────────────────────
 
@@ -60,49 +61,55 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 
 function DashboardContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { data: session } = useSession()
   const { toast } = useToast()
 
   // Role comes from the session JWT, never from a URL param
   const currentRole = ((session?.user as { role?: string })?.role ?? 'customer') as 'admin' | 'customer'
   const globalSearchQuery = searchParams.get('search') || ''
-  const currentTab        = searchParams.get('tab')    || 'overview'
+  const currentTab = searchParams.get('tab') || 'overview'
 
   // ── Cart ──
-  const [cartItems, setCartItems]       = useLocalStorage<CartItem[]>('cartItems', [])
-  const [isCartOpen, setIsCartOpen]     = useState(false)
+  const [cartItems, setCartItems] = useLocalStorage<CartItem[]>('cartItems', [])
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
 
+  // ── Coupons ──
+  const [claimedCoupons, setClaimedCoupons] = useLocalStorage<Coupon[]>('claimedCoupons', [])
+  const [activeCoupon, setActiveCoupon] = useState<Coupon | null>(null)
+
   // ── Modal visibility ──
-  const [isAddProductOpen,    setIsAddProductOpen]    = useState(false)
-  const [isEditProductOpen,   setIsEditProductOpen]   = useState(false)
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false)
+  const [isAddRewardOpen, setIsAddRewardOpen] = useState(false)
+  const [isEditProductOpen, setIsEditProductOpen] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
-  const [productToDelete,     setProductToDelete]     = useState<Product | null>(null)
-  const [isExporting,         setIsExporting]         = useState(false)
-  const [exportSuccess,       setExportSuccess]       = useState(false)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportSuccess, setExportSuccess] = useState(false)
 
   // ── Activity feed ──
   const [systemLogs, setSystemLogs] = useLocalStorage<SystemLog[]>('systemLogs', [
     { id: 1, message: 'System Live Synchronization started', type: 'system', time: 'Just now' },
-    { id: 2, message: 'SSL Secure Session Initialized',      type: 'system', time: '1 min ago' },
+    { id: 2, message: 'SSL Secure Session Initialized', type: 'system', time: '1 min ago' },
   ])
 
   // ── Products ──
   const [selectedProductToEdit, setSelectedProductToEdit] = useState<Product | null>(null)
   const [topProducts, setTopProducts] = useLocalStorage<Product[]>('topProducts', [
-    { id: 1, name: 'Velvet Luxury Sofa',          sales: 148, category: 'Living Room', amount: 275000, emoji: '🛋️', image: null, stock: 12 },
-    { id: 2, name: 'Minimalist Wooden Table',     sales: 85,  category: 'Dining Room', amount: 120000, emoji: '🪑', image: null, stock: 8 },
-    { id: 3, name: 'King Size Walnut Bed',        sales: 43,  category: 'Bedroom',     amount: 450000, emoji: '🛏️', image: null, stock: 5 },
-    { id: 4, name: 'Premium Ergo Office Chair',   sales: 62,  category: 'Office',      amount: 85000,  emoji: '👨‍💻', image: null, stock: 15 },
-    { id: 5, name: 'Nordic Outdoor Lounger',      sales: 29,  category: 'Outdoor',     amount: 195000, emoji: '⛱️', image: null, stock: 7 },
+    { id: 1, name: 'Velvet Luxury Sofa', sales: 148, category: 'Living Room', amount: 275000, emoji: '🛋️', image: null, stock: 12 },
+    { id: 2, name: 'Minimalist Wooden Table', sales: 85, category: 'Dining Room', amount: 120000, emoji: '🪑', image: null, stock: 8 },
+    { id: 3, name: 'King Size Walnut Bed', sales: 43, category: 'Bedroom', amount: 450000, emoji: '🛏️', image: null, stock: 5 },
+    { id: 4, name: 'Premium Ergo Office Chair', sales: 62, category: 'Office', amount: 85000, emoji: '👨‍💻', image: null, stock: 15 },
+    { id: 5, name: 'Nordic Outdoor Lounger', sales: 29, category: 'Outdoor', amount: 195000, emoji: '⛱️', image: null, stock: 7 },
   ])
 
   // ── Product form ──
-  const [prodName,     setProdName]     = useState('')
-  const [prodPrice,    setProdPrice]    = useState('')
+  const [prodName, setProdName] = useState('')
+  const [prodPrice, setProdPrice] = useState('')
   const [prodCategory, setProdCategory] = useState('Living Room')
-  const [prodStock,    setProdStock]    = useState('')
-  const [prodImage,    setProdImage]    = useState<string | null>(null)
+  const [prodStock, setProdStock] = useState('')
+  const [prodImage, setProdImage] = useState<string | null>(null)
 
   // ── Wishlist ──
   const [wishlistItems, setWishlistItems] = useLocalStorage<number[]>('wishlistItems', [])
@@ -124,96 +131,99 @@ function DashboardContent() {
       id: 'ORD-4928', customerName: 'John Doe', customerEmail: 'john@example.com',
       date: '2026-06-08', total: 275000, status: 'Shipped', items: 'Velvet Luxury Sofa (x1)',
       trackingSteps: [
-        { title: 'Order Placed',               completed: true,  date: 'June 8, 09:30 AM' },
-        { title: 'Processing',                 completed: true,  date: 'June 8, 02:15 PM' },
-        { title: 'In Transit (Colombo Hub)',   completed: true,  date: 'June 9, 08:00 AM' },
-        { title: 'Out for Delivery',           completed: false },
+        { title: 'Order Placed', completed: true, date: 'June 8, 09:30 AM' },
+        { title: 'Processing', completed: true, date: 'June 8, 02:15 PM' },
+        { title: 'In Transit (Colombo Hub)', completed: true, date: 'June 9, 08:00 AM' },
+        { title: 'Out for Delivery', completed: false },
       ],
     },
     {
       id: 'ORD-4927', customerName: 'Prabodha Fernando', customerEmail: 'prabodha@consultant.com',
       date: '2026-06-07', total: 120000, status: 'Delivered', items: 'Minimalist Wooden Table (x1)',
       trackingSteps: [
-        { title: 'Order Placed',               completed: true, date: 'June 7, 10:00 AM' },
-        { title: 'Processing',                 completed: true, date: 'June 7, 01:00 PM' },
-        { title: 'In Transit (Colombo Hub)',   completed: true, date: 'June 8, 09:00 AM' },
-        { title: 'Out for Delivery',           completed: true, date: 'June 8, 04:30 PM' },
+        { title: 'Order Placed', completed: true, date: 'June 7, 10:00 AM' },
+        { title: 'Processing', completed: true, date: 'June 7, 01:00 PM' },
+        { title: 'In Transit (Colombo Hub)', completed: true, date: 'June 8, 09:00 AM' },
+        { title: 'Out for Delivery', completed: true, date: 'June 8, 04:30 PM' },
       ],
     },
     {
       id: 'ORD-4929', customerName: 'Shan Diaz', customerEmail: 'shan@homeowner.com',
       date: '2026-06-09', total: 85000, status: 'Processing', items: 'Premium Ergo Office Chair (x1)',
       trackingSteps: [
-        { title: 'Order Placed',               completed: true, date: 'June 9, 11:00 AM' },
-        { title: 'Processing',                 completed: true, date: 'June 9, 11:30 AM' },
-        { title: 'In Transit (Colombo Hub)',   completed: false },
-        { title: 'Out for Delivery',           completed: false },
+        { title: 'Order Placed', completed: true, date: 'June 9, 11:00 AM' },
+        { title: 'Processing', completed: true, date: 'June 9, 11:30 AM' },
+        { title: 'In Transit (Colombo Hub)', completed: false },
+        { title: 'Out for Delivery', completed: false },
       ],
     },
   ])
   const [selectedOrderToTrack, setSelectedOrderToTrack] = useState<string>('ORD-4928')
-  const [orderSearch,          setOrderSearch]          = useState('')
-  const [orderStatusFilter,    setOrderStatusFilter]    = useState('All')
+  const [orderSearch, setOrderSearch] = useState('')
+  const [orderStatusFilter, setOrderStatusFilter] = useState('All')
+
+  // ── Rewards ──
+  const [rewardCatalogue, setRewardCatalogue] = useLocalStorage<(Omit<Coupon, 'claimedAt'> & { isActive?: boolean })[]>('rewardCatalogue', REWARD_CATALOGUE)
 
   // ── Customers ──
   const [customers, setCustomers] = useLocalStorage<Customer[]>('customers', [
-    { id: 1, name: 'Prabodha Fernando', email: 'prabodha@consultant.com', ordersCount: 5, totalSpent: 1245000, status: 'Active',    avatar: 'PF' },
-    { id: 2, name: 'John Doe',          email: 'john@example.com',        ordersCount: 3, totalSpent: 480000,  status: 'Active',    avatar: 'JD' },
-    { id: 3, name: 'Shan Diaz',         email: 'shan@homeowner.com',      ordersCount: 1, totalSpent: 85000,   status: 'Active',    avatar: 'SD' },
-    { id: 4, name: 'Jane Smith',        email: 'jane@example.com',        ordersCount: 0, totalSpent: 0,       status: 'Suspended', avatar: 'JS' },
+    { id: 1, name: 'Prabodha Fernando', email: 'prabodha@consultant.com', ordersCount: 5, totalSpent: 1245000, status: 'Active', avatar: 'PF' },
+    { id: 2, name: 'John Doe', email: 'john@example.com', ordersCount: 3, totalSpent: 480000, status: 'Active', avatar: 'JD' },
+    { id: 3, name: 'Shan Diaz', email: 'shan@homeowner.com', ordersCount: 1, totalSpent: 85000, status: 'Active', avatar: 'SD' },
+    { id: 4, name: 'Jane Smith', email: 'jane@example.com', ordersCount: 0, totalSpent: 0, status: 'Suspended', avatar: 'JS' },
   ])
   const [customerSearch, setCustomerSearch] = useState('')
 
   // ── Support tickets ──
   const [tickets, setTickets] = useLocalStorage<Ticket[]>('tickets', [
-    { id: 1, subject: 'Delivery Time Inquiry',   message: 'Hi support, when can I expect my Luxury Sofa order to arrive in Kandy?',                                                                          sender: 'customer', time: 'Yesterday',  status: 'Open' },
-    { id: 2, subject: 'Care Instructions Response', message: 'Hello! For the Velvet Luxury Sofa, use a soft fabric brush or vacuum with a soft brush attachment. Avoid harsh chemicals.',                     sender: 'admin',    time: '2 hrs ago', status: 'Resolved' },
+    { id: 1, subject: 'Delivery Time Inquiry', message: 'Hi support, when can I expect my Luxury Sofa order to arrive in Kandy?', sender: 'customer', time: 'Yesterday', status: 'Open' },
+    { id: 2, subject: 'Care Instructions Response', message: 'Hello! For the Velvet Luxury Sofa, use a soft fabric brush or vacuum with a soft brush attachment. Avoid harsh chemicals.', sender: 'admin', time: '2 hrs ago', status: 'Resolved' },
   ])
-  const [newTicketSubject,  setNewTicketSubject]  = useState('')
-  const [newTicketMessage,  setNewTicketMessage]  = useState('')
+  const [newTicketSubject, setNewTicketSubject] = useState('')
+  const [newTicketMessage, setNewTicketMessage] = useState('')
   const [newTicketCategory, setNewTicketCategory] = useState('Order Issue')
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false)
 
   // ── Admin store settings ──
-  const [storeName,        setStoreName]        = useState('Furniture Store Colombo')
-  const [storeEmail,       setStoreEmail]       = useState('admin@furniture.com')
-  const [currency,         setCurrency]         = useState('LKR')
-  const [shippingFee,      setShippingFee]      = useState('5000')
-  const [taxRate,          setTaxRate]          = useState('8')
-  const [maintenanceMode,  setMaintenanceMode]  = useState(false)
-  const [autoInvoice,      setAutoInvoice]      = useState(true)
+  const [storeName, setStoreName] = useState('Furniture Store Colombo')
+  const [storeEmail, setStoreEmail] = useState('admin@furniture.com')
+  const [currency, setCurrency] = useState('LKR')
+  const [shippingFee, setShippingFee] = useState('5000')
+  const [taxRate, setTaxRate] = useState('8')
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [autoInvoice, setAutoInvoice] = useState(true)
   const [reviewModeration, setReviewModeration] = useState(true)
   const [isSavingSettings, setIsSavingSettings] = useState(false)
-  const [saveSuccess,      setSaveSuccess]      = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'billing' | 'security' | 'notifications'>('general')
 
   // ── Admin notification toggles ──
-  const [alertNewOrders,         setAlertNewOrders]         = useState(true)
-  const [alertLowStock,          setAlertLowStock]          = useState(true)
-  const [alertCustomerUpdates,   setAlertCustomerUpdates]   = useState(true)
-  const [alertRevenueMilestone,  setAlertRevenueMilestone]  = useState(false)
+  const [alertNewOrders, setAlertNewOrders] = useState(true)
+  const [alertLowStock, setAlertLowStock] = useState(true)
+  const [alertCustomerUpdates, setAlertCustomerUpdates] = useState(true)
+  const [alertRevenueMilestone, setAlertRevenueMilestone] = useState(false)
   const [alertSystemMaintenance, setAlertSystemMaintenance] = useState(true)
 
   // ── Customer profile settings ──
-  const [profileName,     setProfileName]     = useState('John Doe')
-  const [profileEmail,    setProfileEmail]    = useState('john@example.com')
-  const [profileAvatar,   setProfileAvatar]   = useState<string | null>(null)
-  const [profilePhone,    setProfilePhone]    = useState('+94 77 123 4567')
-  const [profileAddress,  setProfileAddress]  = useState('123 Galle Road, Colombo 03')
-  const [profileCity,     setProfileCity]     = useState('Colombo')
-  const [profileBio,      setProfileBio]      = useState('Interior design enthusiast, Furniture collector.')
+  const [profileName, setProfileName] = useState('John Doe')
+  const [profileEmail, setProfileEmail] = useState('john@example.com')
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
+  const [profilePhone, setProfilePhone] = useState('+94 77 123 4567')
+  const [profileAddress, setProfileAddress] = useState('123 Galle Road, Colombo 03')
+  const [profileCity, setProfileCity] = useState('Colombo')
+  const [profileBio, setProfileBio] = useState('Interior design enthusiast, Furniture collector.')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
-  const [profileSuccess,  setProfileSuccess]  = useState(false)
+  const [profileSuccess, setProfileSuccess] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword,     setNewPassword]     = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSavingPassword, setIsSavingPassword] = useState(false)
-  const [passwordSuccess,  setPasswordSuccess]  = useState(false)
-  const [passwordError,    setPasswordError]    = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
   const [activeProfileTab, setActiveProfileTab] = useState<'profile' | 'security' | 'preferences'>('profile')
-  const [emailNotifs,  setEmailNotifs]  = useState(true)
+  const [emailNotifs, setEmailNotifs] = useState(true)
   const [orderUpdates, setOrderUpdates] = useState(true)
-  const [promoNotifs,  setPromoNotifs]  = useState(false)
+  const [promoNotifs, setPromoNotifs] = useState(false)
 
   // Seed profile from session on mount
   useEffect(() => {
@@ -221,12 +231,12 @@ function DashboardContent() {
     if (raw) {
       try {
         const user = JSON.parse(raw)
-        if (user.name)   setProfileName(user.name)
-        if (user.email)  setProfileEmail(user.email)
+        if (user.name) setProfileName(user.name)
+        if (user.email) setProfileEmail(user.email)
         if (user.avatar) setProfileAvatar(user.avatar)
       } catch { /* ignore malformed data */ }
     } else if (session?.user) {
-      if (session.user.name)  setProfileName(session.user.name)
+      if (session.user.name) setProfileName(session.user.name)
       if (session.user.email) setProfileEmail(session.user.email)
     }
   }, [session])
@@ -240,6 +250,27 @@ function DashboardContent() {
     }
     setSystemLogs((prev) => [newLog, ...prev].slice(0, 8))
   }, [setSystemLogs])
+
+  const dispatchNotification = useCallback((title: string, message: string, type: 'order' | 'stock' | 'system' | 'success' | 'warning') => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('newNotification', { detail: { title, message, type } }))
+    }
+  }, [])
+
+  const handleDeleteOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    const newLog: SystemLog = {
+      id: Date.now(), message: `Order ${orderId} was deleted by admin`, type: 'admin',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    }
+    setSystemLogs((prev) => [newLog, ...prev].slice(0, 8))
+    dispatchNotification('Order Deleted', `Order ${orderId} has been deleted from the system.`, 'warning')
+  }
+
+  const handleToggleRewardStatus = (rewardId: number) => {
+    setRewardCatalogue((prev) => prev.map((r) => r.id === rewardId ? { ...r, isActive: r.isActive === false ? true : false } : r))
+    addLog(`Toggled reward #${rewardId} active status`, 'admin')
+  }
 
   const resetFormFields = () => {
     setProdName(''); setProdPrice(''); setProdStock(''); setProdImage(null); setProdCategory('Living Room')
@@ -283,10 +314,10 @@ function DashboardContent() {
     return log.message.toLowerCase().includes(q) || log.type.toLowerCase().includes(q)
   })
 
-  const totalRevenue      = orders.reduce((a, o) => a + o.total, 0)
-  const totalCartItems    = cartItems.reduce((a, i) => a + i.quantity, 0)
-  const totalCartAmount   = cartItems.reduce((a, i) => a + (i.product.amount * i.quantity), 0)
-  const loyaltyPoints     = Math.round(totalRevenue / 100)
+  const totalRevenue = orders.reduce((a, o) => a + o.total, 0)
+  const totalCartItems = cartItems.reduce((a, i) => a + i.quantity, 0)
+  const totalCartAmount = cartItems.reduce((a, i) => a + (i.product.amount * i.quantity), 0)
+  const loyaltyPoints = Math.round(totalRevenue / 100)
   const activeListingsCount = 1235 + topProducts.length
 
   // ── Cart handlers ─────────────────────────────────────────────────────────
@@ -310,6 +341,14 @@ function DashboardContent() {
     if (p) addLog(`Removed "${p.name}" from cart`, 'customer')
   }
 
+  const handleSendToWishlist = (product: Product) => {
+    if (!wishlistItems.includes(product.id)) {
+      setWishlistItems((prev) => [...prev, product.id])
+      toast.success(`✨ Added ${product.name} to wishlist!`)
+    }
+    router.push('/dashboard?tab=collections')
+  }
+
   const handleBuyNow = (product: Product) => {
     if (product.stock <= 0) { toast.error(`${product.name} is out of stock!`); return }
     const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`
@@ -318,32 +357,56 @@ function DashboardContent() {
       date: new Date().toISOString().split('T')[0], total: product.amount,
       status: 'Pending', items: `${product.name} (x1)`,
       trackingSteps: [
-        { title: 'Order Placed',             completed: true, date: 'Just now' },
-        { title: 'Processing',               completed: false },
+        { title: 'Order Placed', completed: true, date: 'Just now' },
+        { title: 'Processing', completed: false },
         { title: 'In Transit (Colombo Hub)', completed: false },
-        { title: 'Out for Delivery',         completed: false },
+        { title: 'Out for Delivery', completed: false },
       ],
     }
     setOrders((prev) => [newOrder, ...prev])
     setSelectedOrderToTrack(orderId)
-    setTopProducts((prev) => prev.map((p) => p.id === product.id ? { ...p, stock: p.stock - 1, sales: p.sales + 1 } : p))
+
+    // Remove from cart if it was in the cart, restoring its quantity to stock first
+    let cartQtyToRestore = 0;
+    setCartItems((prev) => {
+      const inCart = prev.find(i => i.product.id === product.id)
+      if (inCart) cartQtyToRestore = inCart.quantity
+      return prev.filter(i => i.product.id !== product.id)
+    })
+
+    setTopProducts((prev) => prev.map((p) => {
+      if (p.id === product.id) {
+        return { ...p, stock: p.stock + cartQtyToRestore - 1, sales: p.sales - cartQtyToRestore + 1 }
+      }
+      return p
+    }))
+    if (activeCoupon) {
+      setClaimedCoupons((prev) => prev.map(c => c.id === activeCoupon.id ? { ...c, status: 'used' } : c))
+      setActiveCoupon(null)
+    }
     addLog(`Placed order ${orderId} for "${product.name}"`, 'customer')
     toast.success(`✅ Order ${orderId} placed! Track in the Orders tab.`)
   }
 
   const handleCartCheckout = () => {
     if (cartItems.length === 0) return
-    const orderId   = `ORD-${Math.floor(1000 + Math.random() * 9000)}`
+    const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`
     const itemsText = cartItems.map((i) => `${i.product.name} (x${i.quantity})`).join(', ')
+    let discountedTotal = totalCartAmount
+    if (activeCoupon) {
+      if (activeCoupon.discountType === 'fixed') discountedTotal = Math.max(0, totalCartAmount - activeCoupon.discountValue)
+      if (activeCoupon.discountType === 'percent') discountedTotal = Math.round(totalCartAmount * (1 - activeCoupon.discountValue / 100))
+      if (activeCoupon.discountType === 'shipping') discountedTotal = Math.max(0, totalCartAmount - activeCoupon.discountValue)
+    }
     const newOrder: Order = {
       id: orderId, customerName: profileName, customerEmail: profileEmail,
-      date: new Date().toISOString().split('T')[0], total: totalCartAmount,
+      date: new Date().toISOString().split('T')[0], total: discountedTotal,
       status: 'Pending', items: itemsText,
       trackingSteps: [
-        { title: 'Order Placed',             completed: true, date: 'Just now' },
-        { title: 'Processing',               completed: false },
+        { title: 'Order Placed', completed: true, date: 'Just now' },
+        { title: 'Processing', completed: false },
         { title: 'In Transit (Colombo Hub)', completed: false },
-        { title: 'Out for Delivery',         completed: false },
+        { title: 'Out for Delivery', completed: false },
       ],
     }
     setOrders((prev) => [newOrder, ...prev])
@@ -355,8 +418,15 @@ function DashboardContent() {
     setSelectedOrderToTrack(orderId)
     setCartItems([])
     setIsCartOpen(false)
+    if (activeCoupon) {
+      const saved = totalCartAmount - discountedTotal
+      setClaimedCoupons((prev) => prev.map(c => c.id === activeCoupon.id ? { ...c, status: 'used' } : c))
+      setActiveCoupon(null)
+      toast.success(`✅ Order ${orderId} placed! Saved LKR ${saved.toLocaleString()} with coupon.`)
+    } else {
+      toast.success(`✅ Order ${orderId} placed successfully! Track it in Orders tab.`)
+    }
     addLog(`Placed cart order ${orderId} (${cartItems.length} items)`, 'customer')
-    toast.success(`✅ Order ${orderId} placed successfully! Track it in Orders tab.`)
   }
 
   // ── Product handlers ──────────────────────────────────────────────────────
@@ -415,10 +485,10 @@ function DashboardContent() {
       if (order.id !== orderId) return order
       const steps = order.trackingSteps.map((step, idx) => {
         let completed = false
-        if (newStatus === 'Pending'    && idx === 0) completed = true
-        if (newStatus === 'Processing' && idx <= 1)  completed = true
-        if (newStatus === 'Shipped'    && idx <= 2)  completed = true
-        if (newStatus === 'Delivered')                completed = true
+        if (newStatus === 'Pending' && idx === 0) completed = true
+        if (newStatus === 'Processing' && idx <= 1) completed = true
+        if (newStatus === 'Shipped' && idx <= 2) completed = true
+        if (newStatus === 'Delivered') completed = true
         return {
           ...step, completed,
           date: completed ? (step.date || `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`) : undefined,
@@ -461,20 +531,66 @@ function DashboardContent() {
       }
       setTickets((prev) => [newTicket, ...prev])
       addLog(`New support ticket submitted: "${newTicketSubject}"`, 'customer')
+      dispatchNotification('New Support Ticket', newTicketSubject, 'warning')
       setNewTicketSubject(''); setNewTicketMessage('')
       setIsSubmittingTicket(false)
 
-      // Automated response after a short delay
+      // Intelligent Automated response after a short delay
       setTimeout(() => {
+        let replyMessage = `Hi ${profileName}, we have received your query about "${newTicketSubject}". Ticket #${Math.floor(10000 + Math.random() * 90000)} has been assigned. Our team will respond within 24 hours.`
+
+        const lowerMsg = newTicketMessage.toLowerCase()
+        const lowerSub = newTicketSubject.toLowerCase()
+        const fullText = lowerMsg + " " + lowerSub
+
+        if (newTicketCategory === 'Order Issue' || fullText.includes('order')) {
+          replyMessage = `Hi ${profileName}, I'd be happy to help with your order! I've checked your recent purchases and can confirm everything is processing normally. Could you provide your specific Order ID (e.g. ORD-1234) so I can look up the exact details for you?`
+        } else if (newTicketCategory === 'Delivery' || fullText.includes('deliver') || fullText.includes('track')) {
+          replyMessage = `Hello ${profileName}, I see you're asking about delivery. Standard deliveries in Colombo take 2-3 business days, while outstation deliveries take up to 5 days. You can track your exact order status in the "Orders" tab. Is there a specific tracking number you need help with?`
+        } else if (newTicketCategory === 'Return / Refund' || fullText.includes('return') || fullText.includes('refund') || fullText.includes('damage')) {
+          replyMessage = `Hi ${profileName}. I'm sorry to hear you're having issues! Our premium furniture comes with a 14-day return policy. Since you're a valued customer, I can initiate a return right away. Please ensure the items are in their original packaging, and let me know when you'd like our team to schedule the pickup.`
+        } else if (newTicketCategory === 'Product Inquiry' || fullText.includes('stock') || fullText.includes('material') || fullText.includes('wood')) {
+          replyMessage = `Hello ${profileName}! That's a great question. All our wooden furniture uses sustainably sourced Walnut or premium Teak, and our upholstery features stain-resistant velvet and linen. Let me know which exact product you're looking at and I can give you the full specifications and dimensions!`
+        } else if (fullText.includes('discount') || fullText.includes('coupon') || fullText.includes('points') || fullText.includes('reward')) {
+          replyMessage = `Hi ${profileName}! You can earn loyalty points on every purchase (1 point per LKR 100 spent) and redeem them in the "Rewards" tab. You can claim discounts like free shipping or LKR 1,000 off! Check your wallet to apply them.`
+        }
+
         const autoReply: Ticket = {
           id: Date.now() + 1, subject: `Re: ${newTicketSubject}`,
-          message: `Hi ${profileName}, we have received your query about "${newTicketSubject}". Ticket #${Math.floor(10000 + Math.random() * 90000)} has been assigned. Our team will respond within 24 hours.`,
+          message: replyMessage,
           sender: 'admin', time: 'Just now', status: 'Resolved',
         }
         setTickets((prev) => [autoReply, ...prev])
         addLog('Auto-response sent for new support ticket', 'system')
       }, 1500)
     }, 1000)
+  }
+
+  const handleAdminReply = (replyMessage: string) => {
+    const newTicket: Ticket = {
+      id: Date.now(),
+      subject: 'Re: Support Request',
+      message: replyMessage,
+      sender: 'admin',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'Resolved'
+    }
+    setTickets((prev) => [newTicket, ...prev])
+    addLog('Admin replied to support request', 'admin')
+    dispatchNotification('Support Reply', 'Admin has responded to a ticket.', 'system')
+  }
+
+  const handleEditTicket = (ticketId: number, newMessage: string) => {
+    if (!newMessage.trim()) return
+    setTickets((prev) => prev.map(t => t.id === ticketId ? { ...t, message: newMessage } : t))
+    addLog(`Message #${ticketId} was edited`, 'system')
+    toast.success('Message updated')
+  }
+
+  const handleDeleteTicket = (ticketId: number) => {
+    setTickets((prev) => prev.filter(t => t.id !== ticketId))
+    addLog(`Message #${ticketId} was deleted`, 'system')
+    toast.success('Message deleted')
   }
 
   // ── Settings handlers ─────────────────────────────────────────────────────
@@ -500,7 +616,7 @@ function DashboardContent() {
       if (raw) {
         try {
           const user = JSON.parse(raw)
-          user.name  = profileName
+          user.name = profileName
           user.email = profileEmail
           if (profileAvatar) user.avatar = profileAvatar
           localStorage.setItem('currentUser', JSON.stringify(user))
@@ -517,7 +633,7 @@ function DashboardContent() {
     e.preventDefault()
     setPasswordError('')
     if (newPassword !== confirmPassword) { setPasswordError('Passwords do not match.'); return }
-    if (newPassword.length < 6)         { setPasswordError('Password must be at least 6 characters.'); return }
+    if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return }
     setIsSavingPassword(true)
     setTimeout(() => {
       setIsSavingPassword(false); setPasswordSuccess(true)
@@ -547,6 +663,12 @@ function DashboardContent() {
 
   const toastHandlers = { toast }
 
+  const handleClaimCoupon = (coupon: Coupon) => {
+    setClaimedCoupons((prev) => [...prev, coupon])
+    addLog(`Claimed coupon "${coupon.code}" (${coupon.title})`, 'customer')
+    toast.success(`🎟️ Coupon "${coupon.code}" added to your wallet! Go to Wishlist to apply it.`)
+  }
+
   return (
     <div className="space-y-8 pb-16 animate-in fade-in duration-500">
 
@@ -572,14 +694,18 @@ function DashboardContent() {
           setIsCartOpen={setIsCartOpen}
           handleExportReport={handleExportReport}
           setIsAddProductOpen={setIsAddProductOpen}
+          setIsAddRewardOpen={setIsAddRewardOpen}
           handleAddToCart={handleAddToCart}
           handleBuyNow={handleBuyNow}
+          handleSendToWishlist={handleSendToWishlist}
           handleRemoveFromCart={handleRemoveFromCart}
           handleCartCheckout={handleCartCheckout}
           openEditModal={openEditModal}
           openDeleteConfirm={openDeleteConfirm}
           wishlistItems={wishlistItems}
           toggleWishlist={toggleWishlist}
+          rewardCatalogue={rewardCatalogue}
+          handleToggleRewardStatus={handleToggleRewardStatus}
         />
       )}
 
@@ -596,6 +722,7 @@ function DashboardContent() {
           selectedOrderToTrack={selectedOrderToTrack}
           setSelectedOrderToTrack={setSelectedOrderToTrack}
           handleStatusChange={handleStatusChange}
+          handleDeleteOrder={handleDeleteOrder}
           handleNotifyClient={handleNotifyClient}
         />
       )}
@@ -633,24 +760,35 @@ function DashboardContent() {
           handleTicketSubmit={handleTicketSubmit}
           handleToggleCustomerStatus={handleToggleCustomerStatus}
           handleSendCoupon={handleSendCoupon}
+          onAdminReply={handleAdminReply}
+          handleEditTicket={handleEditTicket}
+          handleDeleteTicket={handleDeleteTicket}
         />
       )}
 
       {/* ── Collections (customer only) ──────────────────────────────────── */}
       {currentTab === 'collections' && currentRole === 'customer' && (
-        <CollectionsTab 
-          toast={toast} 
+        <CollectionsTab
+          toast={toast}
           wishlistItems={wishlistItems}
           topProducts={topProducts}
           toggleWishlist={toggleWishlist}
           handleAddToCart={handleAddToCart}
           handleBuyNow={handleBuyNow}
+          claimedCoupons={claimedCoupons}
+          activeCoupon={activeCoupon}
+          setActiveCoupon={setActiveCoupon}
         />
       )}
 
       {/* ── Rewards (customer only) ──────────────────────────────────────── */}
       {currentTab === 'rewards' && currentRole === 'customer' && (
-        <RewardsTab loyaltyPoints={loyaltyPoints} />
+        <RewardsTab
+          loyaltyPoints={loyaltyPoints}
+          claimedCoupons={claimedCoupons}
+          onClaimCoupon={handleClaimCoupon}
+          rewardCatalogue={rewardCatalogue}
+        />
       )}
 
       {/* ── Settings ─────────────────────────────────────────────────────── */}
@@ -701,6 +839,7 @@ function DashboardContent() {
       <DashboardModals
         currentRole={currentRole}
         isAddProductOpen={isAddProductOpen} setIsAddProductOpen={setIsAddProductOpen}
+        isAddRewardOpen={isAddRewardOpen} setIsAddRewardOpen={setIsAddRewardOpen}
         isEditProductOpen={isEditProductOpen} setIsEditProductOpen={setIsEditProductOpen}
         isDeleteConfirmOpen={isDeleteConfirmOpen} setIsDeleteConfirmOpen={setIsDeleteConfirmOpen}
         productToDelete={productToDelete} setProductToDelete={setProductToDelete}
@@ -713,6 +852,7 @@ function DashboardContent() {
         handleAddProductSubmit={handleAddProductSubmit}
         handleEditProductSubmit={handleEditProductSubmit}
         handleDeleteProduct={handleDeleteProduct}
+        handleAddRewardSubmit={(newReward) => setRewardCatalogue(prev => [...prev, { ...newReward, isActive: true }])}
         resetFormFields={resetFormFields}
         handleImageUpload={handleImageUpload}
       />

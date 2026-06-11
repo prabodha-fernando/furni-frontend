@@ -55,3 +55,15 @@ export interface SystemLog {
   type: 'admin' | 'customer' | 'system'
   time: string
 }
+
+export interface Coupon {
+  id: number
+  code: string
+  title: string
+  discountType: 'fixed' | 'percent' | 'shipping'
+  discountValue: number    // LKR amount OR percent OR 0 for free shipping
+  pointsCost: number
+  claimedAt: string
+  status?: 'active' | 'used'
+  isActive?: boolean
+}

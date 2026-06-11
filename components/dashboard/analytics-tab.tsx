@@ -51,8 +51,8 @@ export function AnalyticsTab({
     label: cat,
     emoji: CATEGORY_EMOJIS[cat],
     pct: totalProductRevenue ? Math.round((categoryRevenue[cat] || 0) / totalProductRevenue * 100) : 0,
-    color: ['bg-blue-600', 'bg-amber-500', 'bg-indigo-600', 'bg-emerald-500', 'bg-rose-400', 'bg-purple-500'][Object.keys(CATEGORY_EMOJIS).indexOf(cat) % 6],
-    textColor: ['text-blue-600', 'text-amber-600', 'text-indigo-600', 'text-emerald-600', 'text-rose-500', 'text-purple-600'][Object.keys(CATEGORY_EMOJIS).indexOf(cat) % 6],
+    color: ['bg-primary', 'bg-amber-500', 'bg-indigo-600', 'bg-emerald-500', 'bg-rose-400', 'bg-purple-500'][Object.keys(CATEGORY_EMOJIS).indexOf(cat) % 6],
+    textColor: ['text-primary', 'text-amber-600', 'text-indigo-600', 'text-emerald-600', 'text-rose-500', 'text-purple-600'][Object.keys(CATEGORY_EMOJIS).indexOf(cat) % 6],
   })).sort((a, b) => b.pct - a.pct).filter((c) => c.pct > 0)
 
   const handleClaimVoucher = () => {
@@ -72,7 +72,7 @@ export function AnalyticsTab({
           {/* Admin KPIs */}
           <div className="grid gap-5 md:grid-cols-4">
             {[
-              { label: 'Gross Revenue', value: `LKR ${totalRevenue.toLocaleString()}`, sub: '+18.5% YoY', trend: true, icon: BarChart3, color: 'bg-blue-50 text-blue-600' },
+              { label: 'Gross Revenue', value: `LKR ${totalRevenue.toLocaleString()}`, sub: '+18.5% YoY', trend: true, icon: BarChart3, color: 'bg-primary/10 text-primary' },
               { label: 'Profit Margin', value: `LKR ${profitMargin.toLocaleString()}`, sub: '25% gross markup avg', trend: null, icon: PieChart, color: 'bg-emerald-50 text-emerald-600' },
               { label: 'Avg Order Value', value: `LKR ${Math.round(avgOrderValue).toLocaleString()}`, sub: '+4.2% cart growth', trend: true, icon: TrendingUp, color: 'bg-amber-50 text-amber-600' },
               { label: 'Conversion Ratio', value: `${conversionRatio}%`, sub: '-0.1% traffic drop', trend: false, icon: Zap, color: 'bg-rose-50 text-rose-600' },
@@ -107,7 +107,7 @@ export function AnalyticsTab({
                 </div>
               </div>
               <div className="p-6">
-                <svg viewBox="0 0 500 180" className="w-full h-48 text-blue-600 overflow-visible">
+                <svg viewBox="0 0 500 180" className="w-full h-48 text-primary overflow-visible">
                   <defs>
                     <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#2563eb" stopOpacity="0.35" />
@@ -197,7 +197,7 @@ export function AnalyticsTab({
                     <p className="text-[10px] text-slate-400 font-medium">stock</p>
                   </div>
                   <div className="text-right shrink-0 min-w-[100px]">
-                    <p className="text-sm font-black text-blue-600">LKR {(p.amount * p.sales).toLocaleString()}</p>
+                    <p className="text-sm font-black text-primary">LKR {(p.amount * p.sales).toLocaleString()}</p>
                     <p className="text-[10px] text-slate-400 font-medium">revenue</p>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export function AnalyticsTab({
             {[
               { label: 'Total Spent', value: `LKR ${orders.reduce((a, o) => a + o.total, 0).toLocaleString()}`, sub: `Over ${orders.length} orders`, icon: BarChart3, iconBg: 'bg-slate-100 text-slate-600' },
               { label: 'Loyalty Points', value: `${loyaltyPoints} pts`, sub: '1 pt per LKR 100 spent', icon: Award, iconBg: 'bg-emerald-50 text-emerald-600' },
-              { label: 'Membership Tier', value: 'Silver Tier', sub: 'Priority privileges active', icon: Zap, iconBg: 'bg-blue-50 text-blue-600' },
+              { label: 'Membership Tier', value: 'Silver Tier', sub: 'Priority privileges active', icon: Zap, iconBg: 'bg-primary/10 text-primary' },
             ].map(({ label, value, sub, icon: Icon, iconBg }) => (
               <Card key={label} className="border border-slate-100 shadow-lg shadow-slate-200/30 bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
                 <div className="p-6 flex items-start gap-4">
@@ -246,7 +246,7 @@ export function AnalyticsTab({
                         <p className="text-sm font-black text-slate-800">Progress to Gold Tier</p>
                         <p className="text-[11px] text-slate-500 font-medium mt-0.5">Earn 5,000 pts to unlock 10% auto-discounts</p>
                       </div>
-                      <span className="text-sm font-black text-blue-600 bg-white px-3 py-1 rounded-full border border-blue-100 shadow-sm">
+                      <span className="text-sm font-black text-primary bg-white px-3 py-1 rounded-full border border-blue-100 shadow-sm">
                         {loyaltyPoints} / 5,000
                       </span>
                     </div>
@@ -274,7 +274,7 @@ export function AnalyticsTab({
                     <Button
                       disabled={loyaltyPoints < 100 || claimingVoucher}
                       onClick={handleClaimVoucher}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl px-6 h-10 shrink-0 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform gap-2"
+                      className="bg-primary hover:bg-primary/90 text-white text-xs font-bold rounded-xl px-6 h-10 shrink-0 shadow-lg shadow-primary/20 active:scale-95 transition-transform gap-2"
                     >
                       {claimingVoucher ? <><Loader2 className="animate-spin h-4 w-4" /> Processing...</> : 'Claim Reward'}
                     </Button>
