@@ -44,23 +44,23 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 
 function NotificationIcon({ type }: { type: Notification['type'] }) {
   switch (type) {
-    case 'order':   return <ShoppingBag size={15} className="text-blue-600" />
-    case 'stock':   return <AlertTriangle size={15} className="text-amber-500" />
+    case 'order': return <ShoppingBag size={15} className="text-blue-600" />
+    case 'stock': return <AlertTriangle size={15} className="text-amber-500" />
     case 'success': return <CheckCircle size={15} className="text-emerald-600" />
     case 'warning': return <AlertTriangle size={15} className="text-rose-500" />
-    case 'system':  return <Settings size={15} className="text-slate-500" />
-    default:        return <Info size={15} className="text-slate-500" />
+    case 'system': return <Settings size={15} className="text-slate-500" />
+    default: return <Info size={15} className="text-slate-500" />
   }
 }
 
 function notificationIconBg(type: Notification['type']): string {
   switch (type) {
-    case 'order':   return 'bg-blue-50'
-    case 'stock':   return 'bg-amber-50'
+    case 'order': return 'bg-blue-50'
+    case 'stock': return 'bg-amber-50'
     case 'success': return 'bg-emerald-50'
     case 'warning': return 'bg-rose-50'
-    case 'system':  return 'bg-slate-50'
-    default:        return 'bg-slate-50'
+    case 'system': return 'bg-slate-50'
+    default: return 'bg-slate-50'
   }
 }
 
@@ -101,7 +101,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
 
   const searchQuery = searchParams.get('search') || ''
-  const urlTab      = searchParams.get('tab') || 'overview'
+  const urlTab = searchParams.get('tab') || 'overview'
 
   const [activeTab, setActiveTab] = useState(urlTab)
 
@@ -178,7 +178,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  const markRead    = (id: number) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const markRead = (id: number) => setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
 
   const handleTabNav = (tab: string) => {
     setActiveTab(tab)
@@ -187,7 +187,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   // Display name / email: prefer local profile overrides, fall back to session data
-  const displayName  = currentUser?.name  ?? session?.user?.name  ?? (currentRole === 'admin' ? 'Admin User' : 'Guest')
+  const displayName = currentUser?.name ?? session?.user?.name ?? (currentRole === 'admin' ? 'Admin User' : 'Guest')
   const displayEmail = currentUser?.email ?? session?.user?.email ?? ''
   const displayAvatar = currentUser?.avatar ?? session?.user?.image ?? undefined
 
@@ -199,12 +199,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     .toUpperCase()
 
   const navItems = [
-    { tab: 'overview',     icon: LayoutDashboard, label: 'Overview' },
-    { tab: 'orders',       icon: ShoppingBag,     label: currentRole === 'admin' ? 'Orders' : 'My Orders' },
-    { tab: 'analytics',    icon: BarChart3,        label: 'Analytics' },
-    { tab: 'collections',  icon: Heart,            label: 'Wishlist' },
-    { tab: 'rewards',      icon: Award,            label: 'Rewards' },
-    { tab: 'customers',    icon: currentRole === 'admin' ? Users : Mail, label: currentRole === 'admin' ? 'Customers' : 'Support Inbox' },
+    { tab: 'overview', icon: LayoutDashboard, label: 'Overview' },
+    { tab: 'orders', icon: ShoppingBag, label: currentRole === 'admin' ? 'Orders' : 'My Orders' },
+    { tab: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { tab: 'collections', icon: Heart, label: 'Wishlist' },
+    { tab: 'rewards', icon: Award, label: 'Rewards' },
+    { tab: 'customers', icon: currentRole === 'admin' ? Users : Mail, label: currentRole === 'admin' ? 'Customers' : 'Support Inbox' },
   ]
 
   const activeNavItems =
@@ -252,11 +252,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <button
               key={tab}
               onClick={() => handleTabNav(tab)}
-              className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left relative overflow-hidden group ${
-                activeTab === tab
+              className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left relative overflow-hidden group ${activeTab === tab
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
                   : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
-              }`}
+                }`}
             >
               {activeTab === tab && <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] animate-[shimmer_2s_infinite]" />}
               <Icon size={18} className={activeTab === tab ? 'text-blue-100' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
@@ -271,11 +270,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400/80 px-2 py-2">Account</p>
             <button
               onClick={() => handleTabNav('settings')}
-              className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left group ${
-                activeTab === 'settings'
+              className={`w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 font-bold transition-all duration-300 text-[13px] text-left group ${activeTab === 'settings'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 translate-x-1'
                   : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 hover:translate-x-1'
-              }`}
+                }`}
             >
               <Settings size={18} className={activeTab === 'settings' ? 'text-blue-100' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
               <span className="relative z-10">{currentRole === 'admin' ? 'Store Settings' : 'My Settings'}</span>
